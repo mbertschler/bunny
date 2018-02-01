@@ -19,6 +19,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/mbertschler/blocks/html"
 )
 
 var config = struct {
@@ -38,7 +40,11 @@ func main() {
 		}
 	}
 	log.Println("Bunny :) running at port", config.port)
-	http.Handle("/", http.FileServer(http.Dir(config.root)))
+	http.Handle("/static/",
+		http.StripPrefix("/static/",
+			http.FileServer(http.Dir(
+				filepath.Join(config.root, "js", "node_modules")))))
+	http.HandleFunc("/", renderPage)
 	log.Println(http.ListenAndServe(":"+config.port, nil))
 }
 
@@ -62,4 +68,11 @@ func findProjectFolder() (string, error) {
 		}
 	}
 	return "", errors.New("couldn't find the project in GOPATH")
+}
+
+func renderPage(w http.ResponseWriter, r *http.Request) {
+	err := html.Render(pageBlock, w)
+	if err != nil {
+		log.Println(err)
+	}
 }
