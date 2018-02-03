@@ -44,6 +44,11 @@ func main() {
 		http.StripPrefix("/static/",
 			http.FileServer(http.Dir(
 				filepath.Join(config.root, "js", "node_modules")))))
+	http.Handle("/js/",
+		http.StripPrefix("/js/",
+			http.FileServer(http.Dir(
+				filepath.Join(config.root, "js", "src")))))
+	http.Handle("/gui/", guiAPI())
 	http.HandleFunc("/", renderPage)
 	log.Println(http.ListenAndServe(":"+config.port, nil))
 }

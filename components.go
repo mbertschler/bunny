@@ -24,13 +24,15 @@ var pageBlock = html.Blocks{
 		html.H1(html.Class("ui center aligned header").Styles("padding:30px"),
 			html.Text("Edit Mode")),
 		editBlock,
+		html.Div(html.Id("container")),
+		html.Script(html.Src("/js/app.js")),
 	),
 }
 
 var editBlock = html.Div(html.Class("ui text container"),
 	html.Div(html.Class("ui grid"),
 		html.Div(html.Class("column"),
-			html.Button(html.Class("ui right floated positive button"),
+			html.Button(append(html.Class("ui right floated positive button"), html.AttrPair{Key: "onclick", Value: "hello('Save!')"}),
 				html.Text("Save"),
 			),
 			html.Button(html.Class("ui right floated basic negative button"),

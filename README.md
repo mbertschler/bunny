@@ -14,7 +14,7 @@ Building
 --------
 
 #### Requirements
-- Go
+- Go and dep
 - Node.js and yarn
 
 ```bash
@@ -23,6 +23,8 @@ cd js
 yarn install
 
 # build bunny
+cd ..
+dep ensure
 go install github.com/mbertschler/bunny
 ```
 
