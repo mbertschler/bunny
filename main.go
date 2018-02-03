@@ -76,7 +76,7 @@ func findProjectFolder() (string, error) {
 }
 
 func renderPage(w http.ResponseWriter, r *http.Request) {
-	err := html.Render(pageBlock, w)
+	err := html.Render(pageBlock(), w)
 	if err != nil {
 		log.Println(err)
 	}

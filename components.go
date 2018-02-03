@@ -1,9 +1,23 @@
+// Copyright 2018 Martin Bertschler.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import "github.com/mbertschler/blocks/html"
 
-var pageBlock = html.Blocks{
-	html.Blocks{html.Doctype("html"),
+func pageBlock() html.Block {
+	return html.Blocks{
+		html.Doctype("html"),
 		html.Head(nil,
 			html.Meta(html.Charset("utf-8")),
 			html.Meta(html.Attr{{Key: "http-equiv", Value: "X-UA-Compatible"}}.Content("IE=edge,chome=1")),
@@ -14,17 +28,17 @@ var pageBlock = html.Blocks{
 			),
 			html.Link(html.Rel("stylesheet").Href("/static/semantic-ui-css/semantic.min.css")),
 			html.Script(html.Src("/static/jquery/dist/jquery.min.js")),
-			html.Script(html.Src("/static/semantic-ui-css/semantic.js")),
+			html.Script(html.Src("/static/semantic-ui-css/semantic.min.js")),
 		),
-	},
-	html.Body(nil,
-		html.H1(html.Class("ui center aligned header").Styles("padding:30px"),
-			html.Text("Bunny Work Management Tool")),
-		html.Div(html.Id("container"),
-			displayBlock(getItemData()),
+		html.Body(nil,
+			html.H1(html.Class("ui center aligned header").Styles("padding:30px"),
+				html.Text("Bunny Work Management Tool")),
+			html.Div(html.Id("container"),
+				displayBlock(getItemData()),
+			),
+			html.Script(html.Src("/js/app.js")),
 		),
-		html.Script(html.Src("/js/app.js")),
-	),
+	}
 }
 
 func editBlock(data itemData) html.Block {
