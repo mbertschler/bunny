@@ -1,12 +1,33 @@
-console.log("hello from app.js")
-hello("app.js")
-
 function hello(name) {
 	callGuiAPI("hello",{
 		name: name,
 	})
 }
 
+function editItem(id) {
+	callGuiAPI("editItem", id)
+}
+
+function saveItem(id) {
+	var data = {}
+	$(".itemForm").each(function(i, el){
+		console.log(el)
+		data[el.name] = el.value
+	})
+	callGuiAPI("saveItem", data)
+}
+
+function viewItem(id) {
+	callGuiAPI("viewItem", id)
+}
+
+function editItemClosed(closed) {
+	callGuiAPI("editItemClosed", closed)
+}
+
+function editItemArchived(archived) {
+	callGuiAPI("editItemArchived", archived)
+}
 
 function callGuiAPI(name, args) {
 	var req = {

@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/mbertschler/blocks/html"
 )
 
 func guiAPI() Handler {
 	handler := Handler{
 		Functions: map[string]Callable{
-			"hello": helloHandler,
+			"hello":            helloHandler,
+			"viewItem":         viewItemHandler,
+			"editItem":         editItemHandler,
+			"saveItem":         saveItemHandler,
+			"editItemClosed":   editItemClosedHandler,
+			"editItemArchived": editItemArchivedHandler,
 		},
 	}
 	// testHello(handler)
@@ -50,33 +53,6 @@ func testHelloHandler() {
 	}
 	res, err := helloHandler(arg)
 	log.Printf("%+v %#v", res, err)
-}
-
-func helloHandler(in json.RawMessage) (*Result, error) {
-	type argType struct {
-		Name string `json:"name"`
-		Age  int    `json:"age"`
-	}
-	args := argType{}
-	err := json.Unmarshal(in, &args)
-	if err != nil {
-		return nil, err
-	}
-	block := html.H1(nil, html.Text("Hello "+args.Name))
-	out, err := html.RenderString(block)
-	if err != nil {
-		return nil, err
-	}
-	ret := Result{
-		HTML: []HTMLUpdate{
-			{
-				Operation: HTMLReplace,
-				Selector:  "#container",
-				Content:   out,
-			},
-		},
-	}
-	return &ret, nil
 }
 
 // ============================================
@@ -122,8 +98,10 @@ func (h Handler) Handle(req *Request) *Response {
 					Message: err.Error(),
 				}
 			}
-			res.HTML = r.HTML
-			res.JS = r.JS
+			if r != nil {
+				res.HTML = r.HTML
+				res.JS = r.JS
+			}
 		}
 		resp.Results = append(resp.Results, res)
 	}
