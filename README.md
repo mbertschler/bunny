@@ -28,6 +28,23 @@ dep ensure
 go install github.com/mbertschler/bunny
 ```
 
+### Build the Docker image
+
+Yarn and dep have to be run on the host before starting the Docker
+build process. 
+
+```bash
+docker build -t mbertschler/bunny:alpha-1 .
+```
+
+Running
+-------
+
+### Using Docker
+
+```bash
+docker run -p 3080:3080 mbertschler/bunny:alpha-1
+```
 
 License
 -------
