@@ -11,6 +11,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+enableSorting()
+
+var sortable 
+function enableSorting() {
+	var el = document.getElementById('item-list');
+	if (el) {
+		var options = {
+			animation: 150,
+			onUpdate: sortUpdate,
+		}
+		sortable = Sortable.create(el, options);
+	}
+}
+
+function sortUpdate(event) {
+	callGuiAPI("sortList",{
+		Old: event.oldIndex,
+		New: event.newIndex,
+	})
+}
+
 function hello(name) {
 	callGuiAPI("hello",{
 		name: name,
@@ -78,6 +99,15 @@ function callGuiAPI(name, args) {
 	})
 }
 
+var callableFunctions = {
+	"setURL": setURL,
+	"enableSorting": enableSorting,
+}
+
+function setURL(args) {
+	history.pushState(args[0], args[1], args[2])
+}
+
 function handleResponse(resp) {
 	for (var i=0; i< resp.Results.length; i++) {
 		var r = resp.Results[i]
@@ -94,9 +124,9 @@ function handleResponse(resp) {
 		if (r.JS) {
 			for (var j=0; j< r.JS.length; j++) {
 				var call = r.JS[j]
-				if (call.Name == "history.pushState") {
-					var args = call.Arguments
-					history.pushState(args[0], args[1], args[2])
+				var func = callableFunctions[call.Name]
+				if (func) {
+					func(call.Arguments)
 				} else {
 					console.warn("function call not implemented :(", call)
 				}

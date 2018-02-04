@@ -15,6 +15,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/mbertschler/blocks/html"
@@ -25,6 +26,7 @@ func guiAPI() Handler {
 		Functions: map[string]Callable{
 			"hello":            helloHandler,
 			"viewList":         viewListHandler,
+			"sortList":         sortListHandler,
 			"newItem":          newItemHandler,
 			"viewItem":         viewItemHandler,
 			"editItem":         editItemHandler,
@@ -43,12 +45,29 @@ func viewListHandler(_ json.RawMessage) (*Result, error) {
 		if err != nil {
 			log.Println(err)
 		}
+		// TODO make Result API nicer
 		res.JS = append(res.JS, JSCall{
-			Name:      "history.pushState",
+			Name:      "setURL",
 			Arguments: args,
+		})
+		res.JS = append(res.JS, JSCall{
+			Name: "enableSorting",
 		})
 	}
 	return res, err
+}
+
+func sortListHandler(in json.RawMessage) (*Result, error) {
+	var args = struct {
+		Old int
+		New int
+	}{}
+	err := json.Unmarshal(in, &args)
+	if err != nil {
+		return nil, err
+	}
+	sortItem(args.Old, args.New)
+	return viewListHandler(nil)
 }
 
 func newItemHandler(in json.RawMessage) (*Result, error) {
@@ -62,7 +81,18 @@ func viewItemHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(displayItemBlock(getItemData(id)))
+	res, err := replaceContainer(displayItemBlock(getItemData(id)))
+	if res != nil {
+		args, err := json.Marshal([]interface{}{nil, "Bunny Item", fmt.Sprint("/item/", id)})
+		if err != nil {
+			log.Println(err)
+		}
+		res.JS = append(res.JS, JSCall{
+			Name:      "setURL",
+			Arguments: args,
+		})
+	}
+	return res, err
 }
 
 func editItemHandler(in json.RawMessage) (*Result, error) {

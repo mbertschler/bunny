@@ -31,8 +31,6 @@ func pageBlock(content html.Block) html.Block {
 				html.Text("Bunny"),
 			),
 			html.Link(html.Rel("stylesheet").Href("/static/semantic-ui-css/semantic.min.css")),
-			html.Script(html.Src("/static/jquery/dist/jquery.min.js")),
-			html.Script(html.Src("/static/semantic-ui-css/semantic.min.js")),
 		),
 		html.Body(nil,
 			html.H1(html.Class("ui center aligned header").Styles("padding:30px"),
@@ -40,6 +38,9 @@ func pageBlock(content html.Block) html.Block {
 			html.Div(html.Id("container"),
 				content,
 			),
+			html.Script(html.Src("/static/jquery/dist/jquery.min.js")),
+			html.Script(html.Src("/static/semantic-ui-css/semantic.min.js")),
+			html.Script(html.Src("/static/sortablejs/Sortable.min.js")),
 			html.Script(html.Src("/js/app.js")),
 		),
 	}
@@ -146,7 +147,8 @@ func displayListBlock(data []itemData) html.Block {
 		} else {
 			iconClass = "selected radio green"
 		}
-		block := html.A(html.Class("item").Href(fmt.Sprint("/item/", item.ID)),
+		block := html.Div(append(html.Class("item"),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("viewItem(%d)", item.ID)}),
 			html.I(html.Class("large middle aligned icon "+iconClass)),
 			html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
 				html.Text(item.Title),
@@ -163,7 +165,7 @@ func displayListBlock(data []itemData) html.Block {
 				),
 			),
 		),
-		html.Div(html.Class("ui relaxed selection list"),
+		html.Div(html.Id("item-list").Class("ui relaxed selection list"),
 			list,
 		),
 	)

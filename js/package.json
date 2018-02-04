@@ -1,6 +1,7 @@
 {
   "license": "Apache-2.0",
   "dependencies": {
-    "semantic-ui-css": "^2.2.14"
+    "semantic-ui-css": "^2.2.14",
+    "sortablejs": "^1.7.0"
   }
 }

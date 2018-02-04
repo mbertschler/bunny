@@ -14,6 +14,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"sync"
 )
@@ -87,6 +88,37 @@ func newItem() itemData {
 	dataList.List = append(dataList.List, dataMaxID)
 	dataLock.Unlock()
 	return item
+}
+
+func sortItem(old, new int) {
+	log.Println("before sorting")
+	data := getListData()
+	for i, e := range data {
+		fmt.Println(i, e.ID, e.Title)
+	}
+	dataLock.Lock()
+	max := len(dataList.List)
+	if old < max && old >= 0 &&
+		new < max && new >= 0 {
+		dataList.List = sortArray(dataList.List, old, new)
+	} else {
+		log.Println("invalid sorting attempt, from", old, "to", new, "max", max)
+	}
+	dataLock.Unlock()
+	log.Println("after sorting")
+	data = getListData()
+	for i, e := range data {
+		fmt.Println(i, e.ID, e.Title)
+	}
+}
+
+// TODO, solve with a loop and benchmark solutions
+func sortArray(arr []int, old, new int) []int {
+	el := arr[old]
+	arr = append(arr[:old], arr[old+1:]...)
+	in := make([]int, len(arr))
+	copy(in, arr)
+	return append(append(arr[:new], el), in[new:]...)
 }
 
 func getListData() []itemData {
