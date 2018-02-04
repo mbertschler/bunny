@@ -25,6 +25,7 @@ func guiAPI() Handler {
 		Functions: map[string]Callable{
 			"hello":            helloHandler,
 			"viewList":         viewListHandler,
+			"newItem":          newItemHandler,
 			"viewItem":         viewItemHandler,
 			"editItem":         editItemHandler,
 			"saveItem":         saveItemHandler,
@@ -48,6 +49,11 @@ func viewListHandler(_ json.RawMessage) (*Result, error) {
 		})
 	}
 	return res, err
+}
+
+func newItemHandler(in json.RawMessage) (*Result, error) {
+	item := newItem()
+	return replaceContainer(editItemBlock(item))
 }
 
 func viewItemHandler(in json.RawMessage) (*Result, error) {

@@ -155,6 +155,14 @@ func displayListBlock(data []itemData) html.Block {
 		list.Add(block)
 	}
 	return html.Div(html.Class("ui text container"),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column"),
+				html.Button(append(html.Class("ui right floated positive button"),
+					html.AttrPair{Key: "onclick", Value: "newItem()"}),
+					html.Text("New item"),
+				),
+			),
+		),
 		html.Div(html.Class("ui relaxed selection list"),
 			list,
 		),

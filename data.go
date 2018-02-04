@@ -78,6 +78,17 @@ func setItemData(id int, in itemData) {
 	dataLock.Unlock()
 }
 
+func newItem() itemData {
+	item := itemData{}
+	dataLock.Lock()
+	dataMaxID++
+	item.ID = dataMaxID
+	dataItems[dataMaxID] = item
+	dataList.List = append(dataList.List, dataMaxID)
+	dataLock.Unlock()
+	return item
+}
+
 func getListData() []itemData {
 	dataLock.RLock()
 	out := make([]itemData, len(dataList.List))

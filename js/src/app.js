@@ -25,6 +25,10 @@ function editItem(id) {
 	callGuiAPI("editItem", id)
 }
 
+function newItem() {
+	callGuiAPI("newItem", null)
+}
+
 function saveItem(id) {
 	var data = {
 		ID: id,
