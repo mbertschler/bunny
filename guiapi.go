@@ -20,22 +20,6 @@ import (
 	"net/http"
 )
 
-func guiAPI() Handler {
-	handler := Handler{
-		Functions: map[string]Callable{
-			"hello":            helloHandler,
-			"viewItem":         viewItemHandler,
-			"editItem":         editItemHandler,
-			"saveItem":         saveItemHandler,
-			"editItemClosed":   editItemClosedHandler,
-			"editItemArchived": editItemArchivedHandler,
-		},
-	}
-	// testHello(handler)
-	// testHelloHandler()
-	return handler
-}
-
 func testHello(handler Handler) {
 	req := &Request{
 		Actions: []Action{

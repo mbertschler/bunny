@@ -2,6 +2,15 @@
 
 
 [[projects]]
+  name = "github.com/go-chi/chi"
+  packages = [
+    ".",
+    "middleware"
+  ]
+  revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
+  version = "v3.3.2"
+
+[[projects]]
   branch = "master"
   name = "github.com/mbertschler/blocks"
   packages = ["html"]
@@ -10,6 +19,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "59e72a0b0ebec565394b1668184af3f190595cb5cbf357069e7c50a532855aff"
+  inputs-digest = "fd6c9009821b1ed5d4f72f4c8177efa84a798dcb1f48625661b90ae697039878"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -15,57 +15,57 @@ package main
 
 import (
 	"encoding/json"
-	"sync"
+	"log"
 
 	"github.com/mbertschler/blocks/html"
 )
 
-var (
-	dataLock sync.RWMutex
-	dataVar  = itemData{
-		Closed:   false,
-		Archived: false,
-		Title:    "Item title",
-		Body:     "Item body",
+func guiAPI() Handler {
+	handler := Handler{
+		Functions: map[string]Callable{
+			"hello":            helloHandler,
+			"viewList":         viewListHandler,
+			"viewItem":         viewItemHandler,
+			"editItem":         editItemHandler,
+			"saveItem":         saveItemHandler,
+			"editItemClosed":   editItemClosedHandler,
+			"editItemArchived": editItemArchivedHandler,
+		},
 	}
-)
-
-type itemData struct {
-	Closed   bool
-	Archived bool
-	Title    string
-	Body     string
+	return handler
 }
 
-func getItemData() itemData {
-	dataLock.RLock()
-	d := dataVar
-	dataLock.RUnlock()
-	return d
-}
-
-func setItemData(in itemData) {
-	dataLock.Lock()
-	dataVar = in
-	dataLock.Unlock()
+func viewListHandler(_ json.RawMessage) (*Result, error) {
+	res, err := replaceContainer(displayListBlock(getListData()))
+	if res != nil {
+		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
+		if err != nil {
+			log.Println(err)
+		}
+		res.JS = append(res.JS, JSCall{
+			Name:      "history.pushState",
+			Arguments: args,
+		})
+	}
+	return res, err
 }
 
 func viewItemHandler(in json.RawMessage) (*Result, error) {
-	var arg string
-	err := json.Unmarshal(in, &arg)
+	var id int
+	err := json.Unmarshal(in, &id)
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(displayBlock(getItemData()))
+	return replaceContainer(displayItemBlock(getItemData(id)))
 }
 
 func editItemHandler(in json.RawMessage) (*Result, error) {
-	var arg string
-	err := json.Unmarshal(in, &arg)
+	var id int
+	err := json.Unmarshal(in, &id)
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(editBlock(getItemData()))
+	return replaceContainer(editItemBlock(getItemData(id)))
 }
 
 func saveItemHandler(in json.RawMessage) (*Result, error) {
@@ -74,42 +74,42 @@ func saveItemHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := getItemData()
+	data := getItemData(arg.ID)
 	if len(arg.Title) > 0 {
 		data.Title = arg.Title
 	}
 	if len(arg.Body) > 0 {
 		data.Body = arg.Body
 	}
-	setItemData(data)
-	return replaceContainer(displayBlock(data))
+	setItemData(arg.ID, data)
+	return replaceContainer(displayItemBlock(data))
 }
 
 func editItemClosedHandler(in json.RawMessage) (*Result, error) {
-	var arg bool
+	var arg itemData
 	err := json.Unmarshal(in, &arg)
 	if err != nil {
 		return nil, err
 	}
-	data := getItemData()
-	data.Closed = arg
-	if !arg {
+	data := getItemData(arg.ID)
+	data.Closed = arg.Closed
+	if !arg.Closed {
 		data.Archived = false
 	}
-	setItemData(data)
-	return replaceContainer(displayBlock(data))
+	setItemData(arg.ID, data)
+	return replaceContainer(displayItemBlock(data))
 }
 
 func editItemArchivedHandler(in json.RawMessage) (*Result, error) {
-	var arg bool
+	var arg itemData
 	err := json.Unmarshal(in, &arg)
 	if err != nil {
 		return nil, err
 	}
-	data := getItemData()
-	data.Archived = arg
-	setItemData(data)
-	return replaceContainer(displayBlock(data))
+	data := getItemData(arg.ID)
+	data.Archived = arg.Archived
+	setItemData(arg.ID, data)
+	return replaceContainer(displayItemBlock(data))
 }
 
 func helloHandler(in json.RawMessage) (*Result, error) {

@@ -17,14 +17,19 @@ function hello(name) {
 	})
 }
 
+function viewList() {
+	callGuiAPI("viewList", null)
+}
+
 function editItem(id) {
 	callGuiAPI("editItem", id)
 }
 
 function saveItem(id) {
-	var data = {}
+	var data = {
+		ID: id,
+	}
 	$(".itemForm").each(function(i, el){
-		console.log(el)
 		data[el.name] = el.value
 	})
 	callGuiAPI("saveItem", data)
@@ -34,12 +39,18 @@ function viewItem(id) {
 	callGuiAPI("viewItem", id)
 }
 
-function editItemClosed(closed) {
-	callGuiAPI("editItemClosed", closed)
+function editItemClosed(id, closed) {
+	callGuiAPI("editItemClosed", {
+		ID: id,
+		Closed: closed,
+	})
 }
 
-function editItemArchived(archived) {
-	callGuiAPI("editItemArchived", archived)
+function editItemArchived(id, archived) {
+	callGuiAPI("editItemArchived", {
+		ID: id,
+		Archived: archived,
+	})
 }
 
 function callGuiAPI(name, args) {
@@ -69,11 +80,21 @@ function handleResponse(resp) {
 		if (r.HTML) {
 			for (var j=0; j< r.HTML.length; j++) {
 				var update = r.HTML[j]
-				console.log(update)
 				if (update.Operation == 1) {
 					$(update.Selector).html(update.Content)
 				} else {
-					console.warn("update type not implemented :(")
+					console.warn("update type not implemented :(", update)
+				}
+			}
+		}
+		if (r.JS) {
+			for (var j=0; j< r.JS.length; j++) {
+				var call = r.JS[j]
+				if (call.Name == "history.pushState") {
+					var args = call.Arguments
+					history.pushState(args[0], args[1], args[2])
+				} else {
+					console.warn("function call not implemented :(", call)
 				}
 			}
 		}

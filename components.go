@@ -13,9 +13,13 @@
 
 package main
 
-import "github.com/mbertschler/blocks/html"
+import (
+	"fmt"
 
-func pageBlock() html.Block {
+	"github.com/mbertschler/blocks/html"
+)
+
+func pageBlock(content html.Block) html.Block {
 	return html.Blocks{
 		html.Doctype("html"),
 		html.Head(nil,
@@ -34,23 +38,23 @@ func pageBlock() html.Block {
 			html.H1(html.Class("ui center aligned header").Styles("padding:30px"),
 				html.Text("Bunny Work Management Tool")),
 			html.Div(html.Id("container"),
-				displayBlock(getItemData()),
+				content,
 			),
 			html.Script(html.Src("/js/app.js")),
 		),
 	}
 }
 
-func editBlock(data itemData) html.Block {
+func editItemBlock(data itemData) html.Block {
 	return html.Div(html.Class("ui text container"),
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
 				html.Button(append(html.Class("ui right floated positive button"),
-					html.AttrPair{Key: "onclick", Value: "saveItem('id')"}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("saveItem(%d)", data.ID)}),
 					html.Text("Save"),
 				),
 				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: "viewItem('id')"}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("viewItem(%d)", data.ID)}),
 					html.Text("Cancel"),
 				),
 			),
@@ -72,32 +76,32 @@ func editBlock(data itemData) html.Block {
 	)
 }
 
-func displayBlock(data itemData) html.Block {
+func displayItemBlock(data itemData) html.Block {
 	var status, statusButton html.Block
 	var archiveButton, archiveLabel html.Block
 	if data.Closed {
 		status = html.I(html.Class("remove circle outline icon red").Styles("display:inline-block"))
 		statusButton = html.Button(append(html.Class("ui right floated positive button"),
-			html.AttrPair{Key: "onclick", Value: "editItemClosed(false)"}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemClosed(%d, false)", data.ID)}),
 			html.Text("Reopen item"),
 		)
 		if data.Archived {
 			archiveButton = html.Button(append(html.Class("ui right floated  button"),
-				html.AttrPair{Key: "onclick", Value: "editItemArchived(false)"}),
+				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, false)", data.ID)}),
 				html.Text("Unarchive item"),
 			)
 			archiveLabel = html.Div(html.Class("ui horizontal label").
 				Styles("top: -4px; position: relative; margin-right: 8px;"), html.Text("archived"))
 		} else {
 			archiveButton = html.Button(append(html.Class("ui right floated  button"),
-				html.AttrPair{Key: "onclick", Value: "editItemArchived(true)"}),
+				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, true)", data.ID)}),
 				html.Text("Archive item"),
 			)
 		}
 	} else {
 		status = html.I(html.Class("selected radio icon green").Styles("display:inline-block"))
 		statusButton = html.Button(append(html.Class("ui right floated negative button"),
-			html.AttrPair{Key: "onclick", Value: "editItemClosed(true)"}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemClosed(%d, true)", data.ID)}),
 			html.Text("Close item"),
 		)
 	}
@@ -105,8 +109,13 @@ func displayBlock(data itemData) html.Block {
 	return html.Div(html.Class("ui text container"),
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
+				html.Button(append(html.Class("ui left floated button"),
+					html.AttrPair{Key: "onclick", Value: "viewList()"}),
+					html.I(html.Class("chevron left icon")),
+					html.Text("List"),
+				),
 				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: "editItem('id')"}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItem(%d)", data.ID)}),
 					html.Text("Edit"),
 				),
 			),
@@ -124,6 +133,30 @@ func displayBlock(data itemData) html.Block {
 				archiveButton,
 				statusButton,
 			),
+		),
+	)
+}
+
+func displayListBlock(data []itemData) html.Block {
+	var list html.Blocks
+	for _, item := range data {
+		var iconClass string
+		if item.Closed {
+			iconClass = "remove circle outline red"
+		} else {
+			iconClass = "selected radio green"
+		}
+		block := html.A(html.Class("item").Href(fmt.Sprint("/item/", item.ID)),
+			html.I(html.Class("large middle aligned icon "+iconClass)),
+			html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
+				html.Text(item.Title),
+			),
+		)
+		list.Add(block)
+	}
+	return html.Div(html.Class("ui text container"),
+		html.Div(html.Class("ui relaxed selection list"),
+			list,
 		),
 	)
 }

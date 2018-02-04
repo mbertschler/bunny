@@ -19,7 +19,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/mbertschler/blocks/html"
 )
 
@@ -40,17 +43,24 @@ func main() {
 		}
 	}
 	log.Println("Bunny :) running at port", config.port)
-	http.Handle("/static/",
+	log.Println(http.ListenAndServe(":"+config.port, router()))
+}
+
+func router() *chi.Mux {
+	r := chi.NewRouter()
+	r.Use(middleware.Recoverer)
+	r.Mount("/static/",
 		http.StripPrefix("/static/",
 			http.FileServer(http.Dir(
 				filepath.Join(config.root, "js", "node_modules")))))
-	http.Handle("/js/",
+	r.Mount("/js/",
 		http.StripPrefix("/js/",
 			http.FileServer(http.Dir(
 				filepath.Join(config.root, "js", "src")))))
-	http.Handle("/gui/", guiAPI())
-	http.HandleFunc("/", renderPage)
-	log.Println(http.ListenAndServe(":"+config.port, nil))
+	r.Post("/gui/", guiAPI().ServeHTTP)
+	r.Get("/item/{id}", renderItemPage)
+	r.Get("/", renderListPage)
+	return r
 }
 
 func setFromEnvironment(target *string, name, fallback string) {
@@ -75,8 +85,22 @@ func findProjectFolder() (string, error) {
 	return "", errors.New("couldn't find the project in GOPATH")
 }
 
-func renderPage(w http.ResponseWriter, r *http.Request) {
-	err := html.Render(pageBlock(), w)
+func renderItemPage(w http.ResponseWriter, r *http.Request) {
+
+	ctx := chi.RouteContext(r.Context())
+	idStr := ctx.URLParam("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Println(err)
+	}
+	err = html.Render(pageBlock(displayItemBlock(getItemData(id))), w)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func renderListPage(w http.ResponseWriter, r *http.Request) {
+	err := html.Render(pageBlock(displayListBlock(getListData())), w)
 	if err != nil {
 		log.Println(err)
 	}
