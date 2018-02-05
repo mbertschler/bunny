@@ -14,7 +14,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"sync"
 )
@@ -22,29 +21,39 @@ import (
 var (
 	dataLock sync.RWMutex
 	dataList = listData{
-		List: []int{1, 2, 3},
+		List: []int{1, 2, 3, 4},
 	}
-	dataMaxID = 3
+	dataMaxID = 4
 	dataItems = map[int]itemData{
 		1: itemData{
 			ID:       1,
-			Closed:   false,
+			Complete: false,
 			Archived: false,
 			Title:    "Hello world!",
 			Body:     "Let's have some fun with bunny!",
+			Focus:    true,
 		},
 		2: itemData{
 			ID:       2,
-			Closed:   true,
+			Complete: true,
 			Archived: false,
 			Title:    "Look at Bunny",
 			Body:     "By reading this text you alredy completed this item.",
+			Later:    true,
 		},
 		3: itemData{
 			ID:       3,
-			Closed:   true,
+			Complete: false,
+			Archived: false,
+			Title:    "Somebody else does it",
+			Body:     "This is something that I am interested in. On the other hand I don't intend to work on it.",
+			Watch:    true,
+		},
+		4: itemData{
+			ID:       4,
+			Complete: true,
 			Archived: true,
-			Title:    "Nevermind me",
+			Title:    "Nevermind me, I'm old",
 			Body:     "I am done and no longer relevant, so I got archived.",
 		},
 	}
@@ -52,10 +61,13 @@ var (
 
 type itemData struct {
 	ID       int
-	Closed   bool
+	Complete bool
 	Archived bool
 	Title    string
 	Body     string
+	Focus    bool
+	Later    bool
+	Watch    bool
 }
 
 type listData struct {
@@ -91,11 +103,6 @@ func newItem() itemData {
 }
 
 func sortItem(old, new int) {
-	log.Println("before sorting")
-	data := getListData()
-	for i, e := range data {
-		fmt.Println(i, e.ID, e.Title)
-	}
 	dataLock.Lock()
 	max := len(dataList.List)
 	if old < max && old >= 0 &&
@@ -105,11 +112,6 @@ func sortItem(old, new int) {
 		log.Println("invalid sorting attempt, from", old, "to", new, "max", max)
 	}
 	dataLock.Unlock()
-	log.Println("after sorting")
-	data = getListData()
-	for i, e := range data {
-		fmt.Println(i, e.ID, e.Title)
-	}
 }
 
 // TODO, solve with a loop and benchmark solutions
@@ -119,6 +121,40 @@ func sortArray(arr []int, old, new int) []int {
 	in := make([]int, len(arr))
 	copy(in, arr)
 	return append(append(arr[:new], el), in[new:]...)
+}
+
+func focusItem(id int, status string) itemData {
+	dataLock.Lock()
+	item := dataItems[id]
+	switch status {
+	case "later":
+		if item.Later {
+			item.Later = false
+		} else {
+			item.Later = true
+			item.Focus = false
+			item.Watch = false
+		}
+	case "focus":
+		if item.Focus {
+			item.Focus = false
+		} else {
+			item.Focus = true
+			item.Later = false
+			item.Watch = false
+		}
+	case "watch":
+		if item.Watch {
+			item.Watch = false
+		} else {
+			item.Watch = true
+			item.Focus = false
+			item.Later = false
+		}
+	}
+	dataItems[id] = item
+	dataLock.Unlock()
+	return item
 }
 
 func getListData() []itemData {

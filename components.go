@@ -80,12 +80,8 @@ func editItemBlock(data itemData) html.Block {
 func displayItemBlock(data itemData) html.Block {
 	var status, statusButton html.Block
 	var archiveButton, archiveLabel html.Block
-	if data.Closed {
-		status = html.I(html.Class("remove circle outline icon red").Styles("display:inline-block"))
-		statusButton = html.Button(append(html.Class("ui right floated positive button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemClosed(%d, false)", data.ID)}),
-			html.Text("Reopen item"),
-		)
+	if data.Complete {
+		status = html.I(html.Class("check circle outline icon green").Styles("display:inline-block"))
 		if data.Archived {
 			archiveButton = html.Button(append(html.Class("ui right floated  button"),
 				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, false)", data.ID)}),
@@ -98,18 +94,40 @@ func displayItemBlock(data itemData) html.Block {
 				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, true)", data.ID)}),
 				html.Text("Archive item"),
 			)
+			statusButton = html.Button(append(html.Class("ui right floated red button"),
+				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemComplete(%d, false)", data.ID)}),
+				html.Text("Reopen item"),
+			)
 		}
 	} else {
-		status = html.I(html.Class("selected radio icon green").Styles("display:inline-block"))
-		statusButton = html.Button(append(html.Class("ui right floated negative button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemClosed(%d, true)", data.ID)}),
-			html.Text("Close item"),
+		status = html.I(html.Class("radio icon grey").Styles("display:inline-block"))
+		statusButton = html.Button(append(html.Class("ui right floated positive button"),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemComplete(%d, true)", data.ID)}),
+			html.Text("Complete item"),
 		)
+	}
+
+	var laterClass, focusClass, watchClass string
+	if data.Later || data.Focus || data.Watch {
+		laterClass, focusClass, watchClass = "", "", ""
+		if data.Later {
+			laterClass = " red"
+		}
+		if data.Focus {
+			focusClass = " yellow"
+		}
+		if data.Watch {
+			watchClass = " blue"
+		}
+	} else {
+		laterClass = " red"
+		focusClass = " yellow"
+		watchClass = " blue"
 	}
 
 	return html.Div(html.Class("ui text container"),
 		html.Div(html.Class("ui grid"),
-			html.Div(html.Class("column"),
+			html.Div(html.Class("column").Styles("text-align:center"),
 				html.Button(append(html.Class("ui left floated button"),
 					html.AttrPair{Key: "onclick", Value: "viewList()"}),
 					html.I(html.Class("chevron left icon")),
@@ -118,6 +136,27 @@ func displayItemBlock(data itemData) html.Block {
 				html.Button(append(html.Class("ui right floated button"),
 					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItem(%d)", data.ID)}),
 					html.Text("Edit"),
+				),
+			),
+		),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column").Styles("text-align:center"),
+				html.Div(html.Class("ui buttons"),
+					html.Button(append(html.Class("ui compact button"+laterClass),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("focusItem(%d, 'later')", data.ID)}),
+						html.I(html.Class("wait icon")),
+						html.Text("Later"),
+					),
+					html.Button(append(html.Class("ui compact button"+focusClass),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("focusItem(%d, 'focus')", data.ID)}),
+						html.I(html.Class("star icon")),
+						html.Text("Focus"),
+					),
+					html.Button(append(html.Class("ui compact button"+watchClass),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("focusItem(%d, 'watch')", data.ID)}),
+						html.I(html.Class("unhide icon")),
+						html.Text("Watch"),
+					),
 				),
 			),
 		),
@@ -142,14 +181,24 @@ func displayListBlock(data []itemData) html.Block {
 	var list html.Blocks
 	for _, item := range data {
 		var iconClass string
-		if item.Closed {
-			iconClass = "remove circle outline red"
+		if item.Complete {
+			iconClass = "check circle outline green"
 		} else {
-			iconClass = "selected radio green"
+			iconClass = "radio grey"
+		}
+		var focusIcon html.Block
+		switch {
+		case item.Later:
+			focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
+		case item.Focus:
+			focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
+		case item.Watch:
+			focusIcon = html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-left:10px"))
 		}
 		block := html.Div(append(html.Class("item"),
 			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("viewItem(%d)", item.ID)}),
 			html.I(html.Class("large middle aligned icon "+iconClass)),
+			focusIcon,
 			html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
 				html.Text(item.Title),
 			),

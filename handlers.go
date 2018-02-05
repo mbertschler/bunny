@@ -31,8 +31,9 @@ func guiAPI() Handler {
 			"viewItem":         viewItemHandler,
 			"editItem":         editItemHandler,
 			"saveItem":         saveItemHandler,
-			"editItemClosed":   editItemClosedHandler,
+			"editItemComplete": editItemCompleteHandler,
 			"editItemArchived": editItemArchivedHandler,
+			"focusItem":        focusItemHandler,
 		},
 	}
 	return handler
@@ -121,15 +122,15 @@ func saveItemHandler(in json.RawMessage) (*Result, error) {
 	return replaceContainer(displayItemBlock(data))
 }
 
-func editItemClosedHandler(in json.RawMessage) (*Result, error) {
+func editItemCompleteHandler(in json.RawMessage) (*Result, error) {
 	var arg itemData
 	err := json.Unmarshal(in, &arg)
 	if err != nil {
 		return nil, err
 	}
 	data := getItemData(arg.ID)
-	data.Closed = arg.Closed
-	if !arg.Closed {
+	data.Complete = arg.Complete
+	if !arg.Complete {
 		data.Archived = false
 	}
 	setItemData(arg.ID, data)
@@ -145,6 +146,19 @@ func editItemArchivedHandler(in json.RawMessage) (*Result, error) {
 	data := getItemData(arg.ID)
 	data.Archived = arg.Archived
 	setItemData(arg.ID, data)
+	return replaceContainer(displayItemBlock(data))
+}
+
+func focusItemHandler(in json.RawMessage) (*Result, error) {
+	var args = struct {
+		ID     int
+		Status string
+	}{}
+	err := json.Unmarshal(in, &args)
+	if err != nil {
+		return nil, err
+	}
+	data := focusItem(args.ID, args.Status)
 	return replaceContainer(displayItemBlock(data))
 }
 

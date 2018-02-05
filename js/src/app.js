@@ -32,6 +32,13 @@ function sortUpdate(event) {
 	})
 }
 
+function focusItem(id, status) {
+	callGuiAPI("focusItem",{
+		ID: id,
+		Status: status,
+	})
+}
+
 function hello(name) {
 	callGuiAPI("hello",{
 		name: name,
@@ -64,10 +71,10 @@ function viewItem(id) {
 	callGuiAPI("viewItem", id)
 }
 
-function editItemClosed(id, closed) {
-	callGuiAPI("editItemClosed", {
+function editItemComplete(id, complete) {
+	callGuiAPI("editItemComplete", {
 		ID: id,
-		Closed: closed,
+		Complete: complete,
 	})
 }
 
