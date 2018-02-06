@@ -89,12 +89,16 @@ func displayItemBlock(data itemData) html.Block {
 			)
 			archiveLabel = html.Div(html.Class("ui horizontal label").
 				Styles("top: -4px; position: relative; margin-right: 8px;"), html.Text("archived"))
+			statusButton = html.Button(append(html.Class("ui right floated red button"),
+				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("deleteItem(%d)", data.ID)}),
+				html.Text("Delete item"),
+			)
 		} else {
 			archiveButton = html.Button(append(html.Class("ui right floated button"),
 				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, true)", data.ID)}),
 				html.Text("Archive item"),
 			)
-			statusButton = html.Button(append(html.Class("ui right floated red button"),
+			statusButton = html.Button(append(html.Class("ui right floated yellow button"),
 				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemComplete(%d, false)", data.ID)}),
 				html.Text("Reopen item"),
 			)

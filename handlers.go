@@ -34,6 +34,7 @@ func guiAPI() Handler {
 			"editItemComplete": editItemCompleteHandler,
 			"editItemArchived": editItemArchivedHandler,
 			"focusItem":        focusItemHandler,
+			"deleteItem":       deleteItemHandler,
 		},
 	}
 	return handler
@@ -160,6 +161,16 @@ func focusItemHandler(in json.RawMessage) (*Result, error) {
 	}
 	data := focusItem(args.ID, args.Status)
 	return replaceContainer(displayItemBlock(data))
+}
+
+func deleteItemHandler(in json.RawMessage) (*Result, error) {
+	var arg int
+	err := json.Unmarshal(in, &arg)
+	if err != nil {
+		return nil, err
+	}
+	deleteItem(arg)
+	return replaceContainer(displayListBlock(getListData()))
 }
 
 func helloHandler(in json.RawMessage) (*Result, error) {

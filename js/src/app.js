@@ -67,6 +67,10 @@ function saveItem(id) {
 	callGuiAPI("saveItem", data)
 }
 
+function deleteItem(id) {
+	callGuiAPI("deleteItem", id)
+}
+
 function viewItem(id) {
 	callGuiAPI("viewItem", id)
 }

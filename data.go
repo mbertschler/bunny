@@ -157,6 +157,19 @@ func focusItem(id int, status string) itemData {
 	return item
 }
 
+func deleteItem(id int) {
+	dataLock.Lock()
+	newList := make([]int, 0, len(dataList.List)-1)
+	for _, e := range dataList.List {
+		if e != id {
+			newList = append(newList, e)
+		}
+	}
+	dataList.List = newList
+	delete(dataItems, id)
+	dataLock.Unlock()
+}
+
 func getListData() []itemData {
 	dataLock.RLock()
 	out := make([]itemData, len(dataList.List))
