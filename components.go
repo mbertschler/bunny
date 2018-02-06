@@ -81,7 +81,7 @@ func displayItemBlock(data itemData) html.Block {
 	var status, statusButton html.Block
 	var archiveButton, archiveLabel html.Block
 	if data.Complete {
-		status = html.I(html.Class("check circle outline icon green").Styles("display:inline-block"))
+		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
 		if data.Archived {
 			archiveButton = html.Button(append(html.Class("ui right floated  button"),
 				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, false)", data.ID)}),
@@ -90,7 +90,7 @@ func displayItemBlock(data itemData) html.Block {
 			archiveLabel = html.Div(html.Class("ui horizontal label").
 				Styles("top: -4px; position: relative; margin-right: 8px;"), html.Text("archived"))
 		} else {
-			archiveButton = html.Button(append(html.Class("ui right floated  button"),
+			archiveButton = html.Button(append(html.Class("ui right floated button"),
 				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, true)", data.ID)}),
 				html.Text("Archive item"),
 			)
@@ -178,11 +178,11 @@ func displayItemBlock(data itemData) html.Block {
 }
 
 func displayListBlock(data []itemData) html.Block {
-	var list html.Blocks
+	var list, archived html.Blocks
 	for _, item := range data {
 		var iconClass string
 		if item.Complete {
-			iconClass = "check circle outline green"
+			iconClass = "checkmark green"
 		} else {
 			iconClass = "radio grey"
 		}
@@ -203,7 +203,16 @@ func displayListBlock(data []itemData) html.Block {
 				html.Text(item.Title),
 			),
 		)
-		list.Add(block)
+		if item.Archived {
+			if len(archived) == 0 {
+				archived.Add(html.H4(html.Styles("padding-left:48px"),
+					html.Text("Archived"),
+				))
+			}
+			archived.Add(block)
+		} else {
+			list.Add(block)
+		}
 	}
 	return html.Div(html.Class("ui text container"),
 		html.Div(html.Class("ui grid"),
@@ -216,6 +225,9 @@ func displayListBlock(data []itemData) html.Block {
 		),
 		html.Div(html.Id("item-list").Class("ui relaxed selection list"),
 			list,
+		),
+		html.Div(html.Id("archive-list").Class("ui relaxed selection list"),
+			archived,
 		),
 	)
 }
