@@ -1,6 +1,6 @@
 Bunny project management tool
 =============================
-![status alpha](https://img.shields.io/badge/status-alpha-red.svg)
+![status: not yet usable](https://img.shields.io/badge/status-not%20yet%20usable-red.svg)
 
 Bunny will be a simple and modern project management tool for individuals
 and teams. It is not usable yet.

@@ -33,7 +33,7 @@ func pageBlock(content html.Block) html.Block {
 			html.Link(html.Rel("stylesheet").Href("/static/semantic-ui-css/semantic.min.css")),
 		),
 		html.Body(nil,
-			html.H1(html.Class("ui center aligned header").Styles("padding:30px"),
+			html.H1(html.Class("ui center aligned header").Styles("padding:32px 0 16px"),
 				html.Text("Bunny Work Management Tool")),
 			html.Div(html.Id("container"),
 				content,
@@ -74,6 +74,20 @@ func editItemBlock(data itemData) html.Block {
 				),
 			),
 		),
+	)
+}
+
+func menuBlock() html.Block {
+	return html.Div(html.Class("ui three item menu"),
+		html.A(html.Class("item"),
+			html.I(html.Class("comments purple icon")),
+			html.Text("Updates")),
+		html.A(html.Class("item"),
+			html.I(html.Class("star yellow icon")),
+			html.Text("Focus")),
+		html.A(html.Class("item"),
+			html.I(html.Class("clone violet icon")),
+			html.Text("Areas")),
 	)
 }
 
@@ -130,6 +144,7 @@ func displayItemBlock(data itemData) html.Block {
 	}
 
 	return html.Div(html.Class("ui text container"),
+		menuBlock(),
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column").Styles("text-align:center"),
 				html.Button(append(html.Class("ui left floated button"),
@@ -219,6 +234,7 @@ func displayListBlock(data []itemData) html.Block {
 		}
 	}
 	return html.Div(html.Class("ui text container"),
+		menuBlock(),
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
 				html.Button(append(html.Class("ui right floated positive button"),
