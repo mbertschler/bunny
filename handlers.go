@@ -24,23 +24,21 @@ import (
 func guiAPI() Handler {
 	handler := Handler{
 		Functions: map[string]Callable{
-			"hello":            helloHandler,
-			"viewList":         viewListHandler,
-			"sortList":         sortListHandler,
-			"newItem":          newItemHandler,
-			"viewItem":         viewItemHandler,
-			"editItem":         editItemHandler,
-			"saveItem":         saveItemHandler,
-			"editItemComplete": editItemCompleteHandler,
-			"editItemArchived": editItemArchivedHandler,
-			"focusItem":        focusItemHandler,
-			"deleteItem":       deleteItemHandler,
+			"listView":   listViewHandler,
+			"listSort":   listSortHandler,
+			"itemNew":    itemNewHandler,
+			"itemView":   itemViewHandler,
+			"itemEdit":   itemEditHandler,
+			"itemSave":   itemSaveHandler,
+			"itemState":  itemStateHandler,
+			"itemFocus":  itemFocusHandler,
+			"itemDelete": itemDeleteHandler,
 		},
 	}
 	return handler
 }
 
-func viewListHandler(_ json.RawMessage) (*Result, error) {
+func listViewHandler(_ json.RawMessage) (*Result, error) {
 	res, err := replaceContainer(displayListBlock(getListData()))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
@@ -59,7 +57,7 @@ func viewListHandler(_ json.RawMessage) (*Result, error) {
 	return res, err
 }
 
-func sortListHandler(in json.RawMessage) (*Result, error) {
+func listSortHandler(in json.RawMessage) (*Result, error) {
 	var args = struct {
 		Old int
 		New int
@@ -69,15 +67,15 @@ func sortListHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	sortItem(args.Old, args.New)
-	return viewListHandler(nil)
+	return listViewHandler(nil)
 }
 
-func newItemHandler(in json.RawMessage) (*Result, error) {
+func itemNewHandler(in json.RawMessage) (*Result, error) {
 	item := newItem()
 	return replaceContainer(editItemBlock(item))
 }
 
-func viewItemHandler(in json.RawMessage) (*Result, error) {
+func itemViewHandler(in json.RawMessage) (*Result, error) {
 	var id int
 	err := json.Unmarshal(in, &id)
 	if err != nil {
@@ -97,7 +95,7 @@ func viewItemHandler(in json.RawMessage) (*Result, error) {
 	return res, err
 }
 
-func editItemHandler(in json.RawMessage) (*Result, error) {
+func itemEditHandler(in json.RawMessage) (*Result, error) {
 	var id int
 	err := json.Unmarshal(in, &id)
 	if err != nil {
@@ -106,7 +104,7 @@ func editItemHandler(in json.RawMessage) (*Result, error) {
 	return replaceContainer(editItemBlock(getItemData(id)))
 }
 
-func saveItemHandler(in json.RawMessage) (*Result, error) {
+func itemSaveHandler(in json.RawMessage) (*Result, error) {
 	var arg itemData
 	err := json.Unmarshal(in, &arg)
 	if err != nil {
@@ -123,47 +121,42 @@ func saveItemHandler(in json.RawMessage) (*Result, error) {
 	return replaceContainer(displayItemBlock(data))
 }
 
-func editItemCompleteHandler(in json.RawMessage) (*Result, error) {
-	var arg itemData
-	err := json.Unmarshal(in, &arg)
-	if err != nil {
-		return nil, err
-	}
-	data := getItemData(arg.ID)
-	data.Complete = arg.Complete
-	if !arg.Complete {
-		data.Archived = false
-	}
-	setItemData(arg.ID, data)
-	return replaceContainer(displayItemBlock(data))
-}
-
-func editItemArchivedHandler(in json.RawMessage) (*Result, error) {
-	var arg itemData
-	err := json.Unmarshal(in, &arg)
-	if err != nil {
-		return nil, err
-	}
-	data := getItemData(arg.ID)
-	data.Archived = arg.Archived
-	setItemData(arg.ID, data)
-	return replaceContainer(displayItemBlock(data))
-}
-
-func focusItemHandler(in json.RawMessage) (*Result, error) {
+func itemStateHandler(in json.RawMessage) (*Result, error) {
 	var args = struct {
-		ID     int
-		Status string
+		ID    int
+		State string
 	}{}
 	err := json.Unmarshal(in, &args)
 	if err != nil {
 		return nil, err
 	}
-	data := focusItem(args.ID, args.Status)
+	data := getItemData(args.ID)
+	switch args.State {
+	case "open":
+		data.State = ItemOpen
+	case "complete":
+		data.State = ItemComplete
+	case "archived":
+		data.State = ItemArchived
+	}
+	setItemData(args.ID, data)
 	return replaceContainer(displayItemBlock(data))
 }
 
-func deleteItemHandler(in json.RawMessage) (*Result, error) {
+func itemFocusHandler(in json.RawMessage) (*Result, error) {
+	var args = struct {
+		ID    int
+		Focus string
+	}{}
+	err := json.Unmarshal(in, &args)
+	if err != nil {
+		return nil, err
+	}
+	data := focusItem(args.ID, args.Focus)
+	return replaceContainer(displayItemBlock(data))
+}
+
+func itemDeleteHandler(in json.RawMessage) (*Result, error) {
 	var arg int
 	err := json.Unmarshal(in, &arg)
 	if err != nil {
@@ -171,20 +164,6 @@ func deleteItemHandler(in json.RawMessage) (*Result, error) {
 	}
 	deleteItem(arg)
 	return replaceContainer(displayListBlock(getListData()))
-}
-
-func helloHandler(in json.RawMessage) (*Result, error) {
-	type argType struct {
-		Name string `json:"name"`
-		Age  int    `json:"age"`
-	}
-	args := argType{}
-	err := json.Unmarshal(in, &args)
-	if err != nil {
-		return nil, err
-	}
-	block := html.H1(nil, html.Text("Hello "+args.Name))
-	return replaceContainer(block)
 }
 
 func replaceContainer(block html.Block) (*Result, error) {

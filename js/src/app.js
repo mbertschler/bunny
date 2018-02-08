@@ -13,7 +13,7 @@
 
 enableSorting()
 
-var sortable 
+var sortable
 function enableSorting() {
 	var el = document.getElementById('item-list');
 	if (el) {
@@ -26,66 +26,53 @@ function enableSorting() {
 }
 
 function sortUpdate(event) {
-	callGuiAPI("sortList",{
+	callGuiAPI("listSort",{
 		Old: event.oldIndex,
 		New: event.newIndex,
 	})
 }
 
-function focusItem(id, status) {
-	callGuiAPI("focusItem",{
+function itemFocus(id, status) {
+	callGuiAPI("itemFocus",{
 		ID: id,
-		Status: status,
+		Focus: status,
 	})
 }
 
-function hello(name) {
-	callGuiAPI("hello",{
-		name: name,
-	})
+function listView() {
+	callGuiAPI("listView", null)
 }
 
-function viewList() {
-	callGuiAPI("viewList", null)
+function itemEdit(id) {
+	callGuiAPI("itemEdit", id)
 }
 
-function editItem(id) {
-	callGuiAPI("editItem", id)
+function itemNew() {
+	callGuiAPI("itemNew", null)
 }
 
-function newItem() {
-	callGuiAPI("newItem", null)
-}
-
-function saveItem(id) {
+function itemSave(id) {
 	var data = {
 		ID: id,
 	}
 	$(".itemForm").each(function(i, el){
 		data[el.name] = el.value
 	})
-	callGuiAPI("saveItem", data)
+	callGuiAPI("itemSave", data)
 }
 
-function deleteItem(id) {
-	callGuiAPI("deleteItem", id)
+function itemDelete(id) {
+	callGuiAPI("itemDelete", id)
 }
 
-function viewItem(id) {
-	callGuiAPI("viewItem", id)
+function itemView(id) {
+	callGuiAPI("itemView", id)
 }
 
-function editItemComplete(id, complete) {
-	callGuiAPI("editItemComplete", {
+function itemState(id, state) {
+	callGuiAPI("itemState", {
 		ID: id,
-		Complete: complete,
-	})
-}
-
-function editItemArchived(id, archived) {
-	callGuiAPI("editItemArchived", {
-		ID: id,
-		Archived: archived,
+		State: state,
 	})
 }
 

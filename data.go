@@ -19,59 +19,70 @@ import (
 )
 
 var (
-	dataLock sync.RWMutex
-	dataList = listData{
-		List: []int{1, 2, 3, 4},
-	}
-	dataMaxID = 4
-	dataItems = map[int]itemData{
+	dataLock      sync.RWMutex
+	dataList      = []int{1, 2, 3, 4}
+	dataFocusList = []int{1, 2, 3}
+	dataMaxID     = 4
+	dataItems     = map[int]itemData{
 		1: itemData{
-			ID:       1,
-			Complete: false,
-			Archived: false,
-			Title:    "Hello world!",
-			Body:     "Let's have some fun with bunny!",
-			Focus:    true,
+			ID:    1,
+			State: ItemOpen,
+			Focus: FocusNow,
+			Title: "Hello world!",
+			Body:  "Let's have some fun with bunny!",
 		},
 		2: itemData{
-			ID:       2,
-			Complete: true,
-			Archived: false,
-			Title:    "Look at Bunny",
-			Body:     "By reading this text you alredy completed this item.",
-			Later:    true,
+			ID:    2,
+			State: ItemComplete,
+			Focus: FocusLater,
+			Title: "Look at Bunny",
+			Body:  "By reading this text you alredy completed this item.",
 		},
 		3: itemData{
-			ID:       3,
-			Complete: false,
-			Archived: false,
-			Title:    "Somebody else does it",
-			Body:     "This is something that I am interested in. On the other hand I don't intend to work on it.",
-			Watch:    true,
+			ID:    3,
+			State: ItemOpen,
+			Focus: FocusWatch,
+			Title: "Somebody else does it",
+			Body:  "This is something that I am interested in. On the other hand I don't intend to work on it.",
 		},
 		4: itemData{
-			ID:       4,
-			Complete: true,
-			Archived: true,
-			Title:    "Nevermind me, I'm old",
-			Body:     "I am done and no longer relevant, so I got archived.",
+			ID:    4,
+			State: ItemArchived,
+			Title: "Nevermind me, I'm old",
+			Body:  "I am done and no longer relevant, so I got archived.",
 		},
 	}
 )
 
 type itemData struct {
-	ID       int
-	Complete bool
-	Archived bool
-	Title    string
-	Body     string
-	Focus    bool
-	Later    bool
-	Watch    bool
+	ID    int
+	State ItemState
+	Focus FocusState
+	Title string
+	Body  string
 }
 
-type listData struct {
-	List []int
+type ItemState int8
+
+const (
+	ItemOpen ItemState = iota
+	ItemComplete
+	ItemArchived
+)
+
+type FocusState int8
+
+const (
+	FocusNone FocusState = iota
+	FocusNow
+	FocusPause
+	FocusLater
+	FocusWatch
+)
+
+type FocusListData struct {
+	ID    int
+	State FocusState
 }
 
 func getItemData(id int) itemData {
@@ -97,17 +108,17 @@ func newItem() itemData {
 	dataMaxID++
 	item.ID = dataMaxID
 	dataItems[dataMaxID] = item
-	dataList.List = append(dataList.List, dataMaxID)
+	dataList = append(dataList, dataMaxID)
 	dataLock.Unlock()
 	return item
 }
 
 func sortItem(old, new int) {
 	dataLock.Lock()
-	max := len(dataList.List)
+	max := len(dataList)
 	if old < max && old >= 0 &&
 		new < max && new >= 0 {
-		dataList.List = sortArray(dataList.List, old, new)
+		dataList = sortArray(dataList, old, new)
 	} else {
 		log.Println("invalid sorting attempt, from", old, "to", new, "max", max)
 	}
@@ -128,28 +139,22 @@ func focusItem(id int, status string) itemData {
 	item := dataItems[id]
 	switch status {
 	case "later":
-		if item.Later {
-			item.Later = false
+		if item.Focus == FocusLater {
+			item.Focus = FocusNone
 		} else {
-			item.Later = true
-			item.Focus = false
-			item.Watch = false
+			item.Focus = FocusLater
 		}
 	case "focus":
-		if item.Focus {
-			item.Focus = false
+		if item.Focus == FocusNow {
+			item.Focus = FocusNone
 		} else {
-			item.Focus = true
-			item.Later = false
-			item.Watch = false
+			item.Focus = FocusNow
 		}
 	case "watch":
-		if item.Watch {
-			item.Watch = false
+		if item.Focus == FocusWatch {
+			item.Focus = FocusNone
 		} else {
-			item.Watch = true
-			item.Focus = false
-			item.Later = false
+			item.Focus = FocusWatch
 		}
 	}
 	dataItems[id] = item
@@ -159,21 +164,21 @@ func focusItem(id int, status string) itemData {
 
 func deleteItem(id int) {
 	dataLock.Lock()
-	newList := make([]int, 0, len(dataList.List)-1)
-	for _, e := range dataList.List {
+	newList := make([]int, 0, len(dataList)-1)
+	for _, e := range dataList {
 		if e != id {
 			newList = append(newList, e)
 		}
 	}
-	dataList.List = newList
+	dataList = newList
 	delete(dataItems, id)
 	dataLock.Unlock()
 }
 
 func getListData() []itemData {
 	dataLock.RLock()
-	out := make([]itemData, len(dataList.List))
-	for i, id := range dataList.List {
+	out := make([]itemData, len(dataList))
+	for i, id := range dataList {
 		out[i] = dataItems[id]
 	}
 	dataLock.RUnlock()
@@ -182,6 +187,6 @@ func getListData() []itemData {
 
 func setListData(in []int) {
 	dataLock.Lock()
-	dataList.List = in
+	dataList = in
 	dataLock.Unlock()
 }

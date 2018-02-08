@@ -51,11 +51,11 @@ func editItemBlock(data itemData) html.Block {
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
 				html.Button(append(html.Class("ui right floated positive button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("saveItem(%d)", data.ID)}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemSave(%d)", data.ID)}),
 					html.Text("Save"),
 				),
 				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("viewItem(%d)", data.ID)}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", data.ID)}),
 					html.Text("Cancel"),
 				),
 			),
@@ -94,50 +94,47 @@ func menuBlock() html.Block {
 func displayItemBlock(data itemData) html.Block {
 	var status, statusButton html.Block
 	var archiveButton, archiveLabel html.Block
-	if data.Complete {
+
+	switch data.State {
+	case ItemComplete:
 		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
-		if data.Archived {
-			archiveButton = html.Button(append(html.Class("ui right floated  button"),
-				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, false)", data.ID)}),
-				html.Text("Unarchive item"),
-			)
-			archiveLabel = html.Div(html.Class("ui horizontal label").
-				Styles("top: -4px; position: relative; margin-right: 8px;"), html.Text("archived"))
-			statusButton = html.Button(append(html.Class("ui right floated red button"),
-				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("deleteItem(%d)", data.ID)}),
-				html.Text("Delete item"),
-			)
-		} else {
-			archiveButton = html.Button(append(html.Class("ui right floated button"),
-				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemArchived(%d, true)", data.ID)}),
-				html.Text("Archive item"),
-			)
-			statusButton = html.Button(append(html.Class("ui right floated yellow button"),
-				html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemComplete(%d, false)", data.ID)}),
-				html.Text("Reopen item"),
-			)
-		}
-	} else {
+		archiveButton = html.Button(append(html.Class("ui right floated button"),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'archived')", data.ID)}),
+			html.Text("Archive item"),
+		)
+		statusButton = html.Button(append(html.Class("ui right floated yellow button"),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'open')", data.ID)}),
+			html.Text("Reopen item"),
+		)
+	case ItemArchived:
+		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
+		archiveButton = html.Button(append(html.Class("ui right floated  button"),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", data.ID)}),
+			html.Text("Unarchive item"),
+		)
+		archiveLabel = html.Div(html.Class("ui horizontal label").
+			Styles("top: -4px; position: relative; margin-right: 8px;"), html.Text("archived"))
+		statusButton = html.Button(append(html.Class("ui right floated red button"),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemDelete(%d)", data.ID)}),
+			html.Text("Delete item"),
+		)
+	case ItemOpen:
 		status = html.I(html.Class("radio icon grey").Styles("display:inline-block"))
 		statusButton = html.Button(append(html.Class("ui right floated positive button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItemComplete(%d, true)", data.ID)}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", data.ID)}),
 			html.Text("Complete item"),
 		)
 	}
 
 	var laterClass, focusClass, watchClass string
-	if data.Later || data.Focus || data.Watch {
-		laterClass, focusClass, watchClass = "", "", ""
-		if data.Later {
-			laterClass = " red"
-		}
-		if data.Focus {
-			focusClass = " yellow"
-		}
-		if data.Watch {
-			watchClass = " blue"
-		}
-	} else {
+	switch data.Focus {
+	case FocusLater:
+		laterClass = " red"
+	case FocusNow:
+		focusClass = " yellow"
+	case FocusWatch:
+		watchClass = " blue"
+	case FocusNone:
 		laterClass = " red"
 		focusClass = " yellow"
 		watchClass = " blue"
@@ -148,12 +145,12 @@ func displayItemBlock(data itemData) html.Block {
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column").Styles("text-align:center"),
 				html.Button(append(html.Class("ui left floated button"),
-					html.AttrPair{Key: "onclick", Value: "viewList()"}),
+					html.AttrPair{Key: "onclick", Value: "listView()"}),
 					html.I(html.Class("chevron left icon")),
 					html.Text("List"),
 				),
 				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("editItem(%d)", data.ID)}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemEdit(%d)", data.ID)}),
 					html.Text("Edit"),
 				),
 			),
@@ -162,17 +159,17 @@ func displayItemBlock(data itemData) html.Block {
 			html.Div(html.Class("column").Styles("text-align:center"),
 				html.Div(html.Class("ui buttons"),
 					html.Button(append(html.Class("ui compact button"+laterClass),
-						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("focusItem(%d, 'later')", data.ID)}),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'later')", data.ID)}),
 						html.I(html.Class("wait icon")),
 						html.Text("Later"),
 					),
 					html.Button(append(html.Class("ui compact button"+focusClass),
-						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("focusItem(%d, 'focus')", data.ID)}),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'focus')", data.ID)}),
 						html.I(html.Class("star icon")),
 						html.Text("Focus"),
 					),
 					html.Button(append(html.Class("ui compact button"+watchClass),
-						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("focusItem(%d, 'watch')", data.ID)}),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'watch')", data.ID)}),
 						html.I(html.Class("unhide icon")),
 						html.Text("Watch"),
 					),
@@ -200,36 +197,41 @@ func displayListBlock(data []itemData) html.Block {
 	var list, archived html.Blocks
 	for _, item := range data {
 		var iconClass string
-		if item.Complete {
-			iconClass = "checkmark green"
-		} else {
+		switch item.State {
+		case ItemOpen:
 			iconClass = "radio grey"
+		default:
+			iconClass = "checkmark green"
 		}
+
 		var focusIcon html.Block
-		switch {
-		case item.Later:
+		switch item.Focus {
+		case FocusLater:
 			focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
-		case item.Focus:
+		case FocusNow:
 			focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
-		case item.Watch:
+		case FocusWatch:
 			focusIcon = html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-left:10px"))
 		}
+
 		block := html.Div(append(html.Class("item"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("viewItem(%d)", item.ID)}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", item.ID)}),
 			html.I(html.Class("large middle aligned icon "+iconClass)),
 			focusIcon,
 			html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
 				html.Text(item.Title),
 			),
 		)
-		if item.Archived {
+
+		switch item.State {
+		case ItemArchived:
 			if len(archived) == 0 {
 				archived.Add(html.H4(html.Styles("padding-left:48px"),
 					html.Text("Archived"),
 				))
 			}
 			archived.Add(block)
-		} else {
+		default:
 			list.Add(block)
 		}
 	}
@@ -238,7 +240,7 @@ func displayListBlock(data []itemData) html.Block {
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
 				html.Button(append(html.Class("ui right floated positive button"),
-					html.AttrPair{Key: "onclick", Value: "newItem()"}),
+					html.AttrPair{Key: "onclick", Value: "itemNew()"}),
 					html.Text("New item"),
 				),
 			),

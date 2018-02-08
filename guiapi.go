@@ -20,38 +20,6 @@ import (
 	"net/http"
 )
 
-func testHello(handler Handler) {
-	req := &Request{
-		Actions: []Action{
-			{
-				ID:   123,
-				Name: "hello",
-				Args: []byte(`{"name":"Martin"}`),
-			},
-			{
-				ID:   124,
-				Name: "hellos",
-				Args: []byte(`{"name":"Lucas"}`),
-			},
-		},
-	}
-	resp := handler.Handle(req)
-	log.Printf("%+v", resp)
-}
-
-func testHelloHandler() {
-	args := map[string]interface{}{
-		"name": "Martin",
-		"age":  3,
-	}
-	arg, err := json.Marshal(args)
-	if err != nil {
-		log.Fatal(err)
-	}
-	res, err := helloHandler(arg)
-	log.Printf("%+v %#v", res, err)
-}
-
 // ============================================
 // Logic
 // ============================================
