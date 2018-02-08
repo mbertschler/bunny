@@ -23,10 +23,26 @@ function enableSorting() {
 		}
 		sortable = Sortable.create(el, options);
 	}
+
+	el = document.getElementById('focus-list');
+	if (el) {
+		var options = {
+			animation: 150,
+			onUpdate: sortFocusUpdate,
+		}
+		sortable = Sortable.create(el, options);
+	}
 }
 
 function sortUpdate(event) {
 	callGuiAPI("listSort",{
+		Old: event.oldIndex,
+		New: event.newIndex,
+	})
+}
+
+function sortFocusUpdate(event) {
+	callGuiAPI("focusSort",{
 		Old: event.oldIndex,
 		New: event.newIndex,
 	})
@@ -74,6 +90,10 @@ function itemState(id, state) {
 		ID: id,
 		State: state,
 	})
+}
+
+function focusView(id) {
+	callGuiAPI("focusView", id)
 }
 
 function callGuiAPI(name, args) {

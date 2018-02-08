@@ -20,8 +20,8 @@ import (
 
 var (
 	dataLock      sync.RWMutex
-	dataList      = []int{1, 2, 3, 4}
-	dataFocusList = []int{1, 2, 3}
+	dataList      = []int{1, 2, 3, 5, 4}
+	dataFocusList = []int{1, 5, 2, 3}
 	dataMaxID     = 4
 	dataItems     = map[int]itemData{
 		1: itemData{
@@ -50,6 +50,13 @@ var (
 			State: ItemArchived,
 			Title: "Nevermind me, I'm old",
 			Body:  "I am done and no longer relevant, so I got archived.",
+		},
+		5: itemData{
+			ID:    5,
+			State: ItemOpen,
+			Focus: FocusPause,
+			Title: "I started it but don't know how to finish",
+			Body:  "Somebody please help me so that I can complete this item.",
 		},
 	}
 )
@@ -125,6 +132,18 @@ func sortItem(old, new int) {
 	dataLock.Unlock()
 }
 
+func sortFocusItem(old, new int) {
+	dataLock.Lock()
+	max := len(dataFocusList)
+	if old < max && old >= 0 &&
+		new < max && new >= 0 {
+		dataFocusList = sortArray(dataFocusList, old, new)
+	} else {
+		log.Println("invalid focus sorting attempt, from", old, "to", new, "max", max)
+	}
+	dataLock.Unlock()
+}
+
 // TODO, solve with a loop and benchmark solutions
 func sortArray(arr []int, old, new int) []int {
 	el := arr[old]
@@ -188,5 +207,21 @@ func getListData() []itemData {
 func setListData(in []int) {
 	dataLock.Lock()
 	dataList = in
+	dataLock.Unlock()
+}
+
+func getFocusData() []itemData {
+	dataLock.RLock()
+	out := make([]itemData, len(dataFocusList))
+	for i, id := range dataFocusList {
+		out[i] = dataItems[id]
+	}
+	dataLock.RUnlock()
+	return out
+}
+
+func setFocusData(in []int) {
+	dataLock.Lock()
+	dataFocusList = in
 	dataLock.Unlock()
 }

@@ -33,6 +33,8 @@ func guiAPI() Handler {
 			"itemState":  itemStateHandler,
 			"itemFocus":  itemFocusHandler,
 			"itemDelete": itemDeleteHandler,
+			"focusView":  focusViewHandler,
+			"focusSort":  focusSortHandler,
 		},
 	}
 	return handler
@@ -42,6 +44,25 @@ func listViewHandler(_ json.RawMessage) (*Result, error) {
 	res, err := replaceContainer(displayListBlock(getListData()))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
+		if err != nil {
+			log.Println(err)
+		}
+		// TODO make Result API nicer
+		res.JS = append(res.JS, JSCall{
+			Name:      "setURL",
+			Arguments: args,
+		})
+		res.JS = append(res.JS, JSCall{
+			Name: "enableSorting",
+		})
+	}
+	return res, err
+}
+
+func focusViewHandler(_ json.RawMessage) (*Result, error) {
+	res, err := replaceContainer(displayFocusBlock())
+	if res != nil {
+		args, err := json.Marshal([]interface{}{nil, "Bunny Focus", "/focus/"})
 		if err != nil {
 			log.Println(err)
 		}
@@ -68,6 +89,19 @@ func listSortHandler(in json.RawMessage) (*Result, error) {
 	}
 	sortItem(args.Old, args.New)
 	return listViewHandler(nil)
+}
+
+func focusSortHandler(in json.RawMessage) (*Result, error) {
+	var args = struct {
+		Old int
+		New int
+	}{}
+	err := json.Unmarshal(in, &args)
+	if err != nil {
+		return nil, err
+	}
+	sortFocusItem(args.Old, args.New)
+	return focusViewHandler(nil)
 }
 
 func itemNewHandler(in json.RawMessage) (*Result, error) {
@@ -136,8 +170,10 @@ func itemStateHandler(in json.RawMessage) (*Result, error) {
 		data.State = ItemOpen
 	case "complete":
 		data.State = ItemComplete
+		data.Focus = FocusNone
 	case "archived":
 		data.State = ItemArchived
+		data.Focus = FocusNone
 	}
 	setItemData(args.ID, data)
 	return replaceContainer(displayItemBlock(data))
