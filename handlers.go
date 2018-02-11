@@ -105,8 +105,7 @@ func focusSortHandler(in json.RawMessage) (*Result, error) {
 }
 
 func itemNewHandler(in json.RawMessage) (*Result, error) {
-	item := newItem()
-	return replaceContainer(editItemBlock(item))
+	return replaceContainer(editItemBlock(itemData{}, true))
 }
 
 func itemViewHandler(in json.RawMessage) (*Result, error) {
@@ -135,14 +134,22 @@ func itemEditHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(editItemBlock(getItemData(id)))
+	return replaceContainer(editItemBlock(getItemData(id), false))
 }
 
 func itemSaveHandler(in json.RawMessage) (*Result, error) {
-	var arg itemData
+	var arg struct {
+		ID    int
+		New   bool
+		Title string
+		Body  string
+	}
 	err := json.Unmarshal(in, &arg)
 	if err != nil {
 		return nil, err
+	}
+	if arg.New {
+		arg.ID = newItem().ID
 	}
 	data := getItemData(arg.ID)
 	if len(arg.Title) > 0 {

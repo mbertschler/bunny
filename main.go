@@ -14,6 +14,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -60,6 +61,7 @@ func router() *chi.Mux {
 	r.Post("/gui/", guiAPI().ServeHTTP)
 	r.Get("/item/{id}", renderItemPage)
 	r.Get("/focus/", renderFocusPage)
+	r.Get("/debug", debugData)
 	r.Get("/", renderListPage)
 	return r
 }
@@ -112,4 +114,26 @@ func renderFocusPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func debugData(w http.ResponseWriter, r *http.Request) {
+	dataLock.RLock()
+	var data = struct {
+		List  []int
+		Focus focusList
+		Items map[int]itemData
+	}{
+		List:  dataList,
+		Focus: dataFocus,
+		Items: dataItems,
+	}
+	w.Write([]byte("<html><body><pre>"))
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	err := enc.Encode(data)
+	w.Write([]byte("</pre></body></html>"))
+	if err != nil {
+		log.Println(err)
+	}
+	dataLock.RUnlock()
 }

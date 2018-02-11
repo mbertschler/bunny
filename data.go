@@ -19,29 +19,37 @@ import (
 )
 
 var (
-	dataLock      sync.RWMutex
-	dataList      = []int{1, 2, 3, 5, 4}
-	dataFocusList = []int{1, 5, 2, 3}
-	dataMaxID     = 4
-	dataItems     = map[int]itemData{
+	dataLock  sync.RWMutex
+	dataList  = []int{1, 2, 3, 5, 4}
+	dataFocus = focusList{
+		Focus: 1,
+		Pause: []int{5},
+		Later: []int{2},
+		Watch: []int{3},
+		Index: map[int]FocusState{
+			1: FocusNow,
+			2: FocusLater,
+			3: FocusWatch,
+			5: FocusPause,
+		},
+	}
+	dataMaxID = 5
+	dataItems = map[int]itemData{
 		1: itemData{
 			ID:    1,
 			State: ItemOpen,
-			Focus: FocusNow,
 			Title: "Hello world!",
 			Body:  "Let's have some fun with bunny!",
 		},
 		2: itemData{
 			ID:    2,
 			State: ItemComplete,
-			Focus: FocusLater,
 			Title: "Look at Bunny",
 			Body:  "By reading this text you alredy completed this item.",
 		},
 		3: itemData{
 			ID:    3,
 			State: ItemOpen,
-			Focus: FocusWatch,
 			Title: "Somebody else does it",
 			Body:  "This is something that I am interested in. On the other hand I don't intend to work on it.",
 		},
@@ -54,12 +62,26 @@ var (
 		5: itemData{
 			ID:    5,
 			State: ItemOpen,
-			Focus: FocusPause,
 			Title: "I started it but don't know how to finish",
 			Body:  "Somebody please help me so that I can complete this item.",
 		},
 	}
 )
+
+type focusList struct {
+	Focus int
+	Pause []int
+	Later []int
+	Watch []int
+	Index map[int]FocusState
+}
+
+type focusListData struct {
+	Focus itemData
+	Pause []itemData
+	Later []itemData
+	Watch []itemData
+}
 
 type itemData struct {
 	ID    int
@@ -95,6 +117,7 @@ type FocusListData struct {
 func getItemData(id int) itemData {
 	dataLock.RLock()
 	d := dataItems[id]
+	d.Focus = dataFocus.Index[id]
 	dataLock.RUnlock()
 	return d
 }
@@ -134,13 +157,13 @@ func sortItem(old, new int) {
 
 func sortFocusItem(old, new int) {
 	dataLock.Lock()
-	max := len(dataFocusList)
-	if old < max && old >= 0 &&
-		new < max && new >= 0 {
-		dataFocusList = sortArray(dataFocusList, old, new)
-	} else {
-		log.Println("invalid focus sorting attempt, from", old, "to", new, "max", max)
-	}
+	// max := len(dataFocusList)
+	// if old < max && old >= 0 &&
+	// 	new < max && new >= 0 {
+	// 	dataFocusList = sortArray(dataFocusList, old, new)
+	// } else {
+	// 	log.Println("invalid focus sorting attempt, from", old, "to", new, "max", max)
+	// }
 	dataLock.Unlock()
 }
 
@@ -211,17 +234,8 @@ func setListData(in []int) {
 }
 
 func getFocusData() []itemData {
-	dataLock.RLock()
-	out := make([]itemData, len(dataFocusList))
-	for i, id := range dataFocusList {
-		out[i] = dataItems[id]
-	}
-	dataLock.RUnlock()
-	return out
-}
-
-func setFocusData(in []int) {
-	dataLock.Lock()
-	dataFocusList = in
-	dataLock.Unlock()
+	// dataLock.RLock()
+	// var out focusListData
+	// dataLock.RUnlock()
+	return []itemData{}
 }

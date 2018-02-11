@@ -46,16 +46,22 @@ func pageBlock(content html.Block) html.Block {
 	}
 }
 
-func editItemBlock(data itemData) html.Block {
+func editItemBlock(data itemData, new bool) html.Block {
+	var cancelFunc string
+	if new {
+		cancelFunc = "listView()"
+	} else {
+		cancelFunc = fmt.Sprintf("itemView(%d)", data.ID)
+	}
 	return html.Div(html.Class("ui text container"),
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
 				html.Button(append(html.Class("ui right floated positive button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemSave(%d)", data.ID)}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemSave(%d, %t)", data.ID, new)}),
 					html.Text("Save"),
 				),
 				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", data.ID)}),
+					html.AttrPair{Key: "onclick", Value: cancelFunc}),
 					html.Text("Cancel"),
 				),
 			),
@@ -136,7 +142,7 @@ func displayItemBlock(data itemData) html.Block {
 		laterClass = " red"
 	case FocusPause:
 		focusClass = " orange"
-		focusIcon = "pause"
+		focusIcon = "pause circle outline"
 	case FocusNow:
 		focusClass = " yellow"
 	case FocusWatch:
@@ -216,7 +222,7 @@ func displayListBlock(data []itemData) html.Block {
 		case FocusLater:
 			focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
 		case FocusPause:
-			focusIcon = html.I(html.Class("large middle aligned icon orange pause").Styles("padding-left:10px"))
+			focusIcon = html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-left:10px"))
 		case FocusNow:
 			focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
 		case FocusWatch:
@@ -280,7 +286,7 @@ func displayFocusBlock() html.Block {
 		case FocusLater:
 			focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
 		case FocusPause:
-			focusIcon = html.I(html.Class("large middle aligned icon orange pause").Styles("padding-left:10px"))
+			focusIcon = html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-left:10px"))
 		case FocusNow:
 			focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
 		case FocusWatch:
@@ -295,7 +301,6 @@ func displayFocusBlock() html.Block {
 				html.Text(item.Title),
 			),
 		)
-
 		list.Add(block)
 	}
 	return html.Div(html.Class("ui text container"),

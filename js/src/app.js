@@ -67,9 +67,10 @@ function itemNew() {
 	callGuiAPI("itemNew", null)
 }
 
-function itemSave(id) {
+function itemSave(id, isNew) {
 	var data = {
 		ID: id,
+		New: isNew,
 	}
 	$(".itemForm").each(function(i, el){
 		data[el.name] = el.value
