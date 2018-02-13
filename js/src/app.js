@@ -13,24 +13,19 @@
 
 enableSorting()
 
-var sortable
 function enableSorting() {
-	var el = document.getElementById('item-list');
-	if (el) {
-		var options = {
-			animation: 150,
-			onUpdate: sortUpdate,
-		}
-		sortable = Sortable.create(el, options);
-	}
+	activateList("item-list", sortUpdate)
+	activateList("focus-pause-list", sortFocusUpdate)
+}
 
-	el = document.getElementById('focus-list');
+function activateList(id, cb) {
+	var el = document.getElementById(id);
 	if (el) {
 		var options = {
 			animation: 150,
-			onUpdate: sortFocusUpdate,
+			onUpdate: cb,
 		}
-		sortable = Sortable.create(el, options);
+		Sortable.create(el, options);
 	}
 }
 

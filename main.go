@@ -14,7 +14,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -25,6 +24,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/mbertschler/blocks/html"
+	"github.com/mbertschler/bunny/pkg/data"
 )
 
 var config = struct {
@@ -96,14 +96,14 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(pageBlock(displayItemBlock(getItemData(id))), w)
+	err = html.Render(pageBlock(displayItemBlock(data.ItemByID(id))), w)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func renderListPage(w http.ResponseWriter, r *http.Request) {
-	err := html.Render(pageBlock(displayListBlock(getListData())), w)
+	err := html.Render(pageBlock(displayListBlock(data.Items())), w)
 	if err != nil {
 		log.Println(err)
 	}
@@ -117,23 +117,5 @@ func renderFocusPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func debugData(w http.ResponseWriter, r *http.Request) {
-	dataLock.RLock()
-	var data = struct {
-		List  []int
-		Focus focusList
-		Items map[int]itemData
-	}{
-		List:  dataList,
-		Focus: dataFocus,
-		Items: dataItems,
-	}
-	w.Write([]byte("<html><body><pre>"))
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "    ")
-	err := enc.Encode(data)
-	w.Write([]byte("</pre></body></html>"))
-	if err != nil {
-		log.Println(err)
-	}
-	dataLock.RUnlock()
+	data.WriteDebugData(w)
 }

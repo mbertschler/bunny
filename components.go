@@ -17,6 +17,8 @@ import (
 	"fmt"
 
 	"github.com/mbertschler/blocks/html"
+
+	"github.com/mbertschler/bunny/pkg/data"
 )
 
 func pageBlock(content html.Block) html.Block {
@@ -46,7 +48,7 @@ func pageBlock(content html.Block) html.Block {
 	}
 }
 
-func editItemBlock(data itemData, new bool) html.Block {
+func editItemBlock(data data.Item, new bool) html.Block {
 	var cancelFunc string
 	if new {
 		cancelFunc = "listView()"
@@ -100,54 +102,54 @@ func menuBlock() html.Block {
 	)
 }
 
-func displayItemBlock(data itemData) html.Block {
+func displayItemBlock(d data.Item) html.Block {
 	var status, statusButton html.Block
 	var archiveButton, archiveLabel html.Block
 
-	switch data.State {
-	case ItemComplete:
+	switch d.State {
+	case data.ItemComplete:
 		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
 		archiveButton = html.Button(append(html.Class("ui right floated button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'archived')", data.ID)}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'archived')", d.ID)}),
 			html.Text("Archive item"),
 		)
 		statusButton = html.Button(append(html.Class("ui right floated yellow button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'open')", data.ID)}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'open')", d.ID)}),
 			html.Text("Reopen item"),
 		)
-	case ItemArchived:
+	case data.ItemArchived:
 		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
 		archiveButton = html.Button(append(html.Class("ui right floated  button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", data.ID)}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", d.ID)}),
 			html.Text("Unarchive item"),
 		)
 		archiveLabel = html.Div(html.Class("ui horizontal label").
 			Styles("top: -4px; position: relative; margin-right: 8px;"), html.Text("archived"))
 		statusButton = html.Button(append(html.Class("ui right floated red button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemDelete(%d)", data.ID)}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemDelete(%d)", d.ID)}),
 			html.Text("Delete item"),
 		)
-	case ItemOpen:
+	case data.ItemOpen:
 		status = html.I(html.Class("radio icon grey").Styles("display:inline-block"))
 		statusButton = html.Button(append(html.Class("ui right floated positive button"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", data.ID)}),
+			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", d.ID)}),
 			html.Text("Complete item"),
 		)
 	}
 
 	var laterClass, focusClass, watchClass string
 	var focusIcon = "star"
-	switch data.Focus {
-	case FocusLater:
+	switch d.Focus {
+	case data.FocusLater:
 		laterClass = " red"
-	case FocusPause:
+	case data.FocusPause:
 		focusClass = " orange"
 		focusIcon = "pause circle outline"
-	case FocusNow:
+	case data.FocusNow:
 		focusClass = " yellow"
-	case FocusWatch:
+	case data.FocusWatch:
 		watchClass = " blue"
-	case FocusNone:
+	case data.FocusNone:
 		laterClass = " red"
 		focusClass = " yellow"
 		watchClass = " blue"
@@ -163,7 +165,7 @@ func displayItemBlock(data itemData) html.Block {
 					html.Text("List"),
 				),
 				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemEdit(%d)", data.ID)}),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemEdit(%d)", d.ID)}),
 					html.Text("Edit"),
 				),
 			),
@@ -172,17 +174,17 @@ func displayItemBlock(data itemData) html.Block {
 			html.Div(html.Class("column").Styles("text-align:center"),
 				html.Div(html.Class("ui buttons"),
 					html.Button(append(html.Class("ui compact button"+laterClass),
-						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'later')", data.ID)}),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'later')", d.ID)}),
 						html.I(html.Class("wait icon")),
 						html.Text("Later"),
 					),
 					html.Button(append(html.Class("ui compact button"+focusClass),
-						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'focus')", data.ID)}),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'focus')", d.ID)}),
 						html.I(html.Class(focusIcon+" icon")),
 						html.Text("Focus"),
 					),
 					html.Button(append(html.Class("ui compact button"+watchClass),
-						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'watch')", data.ID)}),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'watch')", d.ID)}),
 						html.I(html.Class("unhide icon")),
 						html.Text("Watch"),
 					),
@@ -192,10 +194,10 @@ func displayItemBlock(data itemData) html.Block {
 		html.H2(nil,
 			status,
 			archiveLabel,
-			html.Text(data.Title),
+			html.Text(d.Title),
 		),
 		html.Div(html.Class("ui divider")),
-		html.P(nil, html.Text(data.Body)),
+		html.P(nil, html.Text(d.Body)),
 		html.Div(html.Class("ui divider")),
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
@@ -206,40 +208,12 @@ func displayItemBlock(data itemData) html.Block {
 	)
 }
 
-func displayListBlock(data []itemData) html.Block {
+func displayListBlock(d []data.Item) html.Block {
 	var list, archived html.Blocks
-	for _, item := range data {
-		var iconClass string
+	for _, item := range d {
+		block := listItemBlock(item)
 		switch item.State {
-		case ItemOpen:
-			iconClass = "radio grey"
-		default:
-			iconClass = "checkmark green"
-		}
-
-		var focusIcon html.Block
-		switch item.Focus {
-		case FocusLater:
-			focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
-		case FocusPause:
-			focusIcon = html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-left:10px"))
-		case FocusNow:
-			focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
-		case FocusWatch:
-			focusIcon = html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-left:10px"))
-		}
-
-		block := html.Div(append(html.Class("item"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", item.ID)}),
-			html.I(html.Class("large middle aligned icon "+iconClass)),
-			focusIcon,
-			html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
-				html.Text(item.Title),
-			),
-		)
-
-		switch item.State {
-		case ItemArchived:
+		case data.ItemArchived:
 			if len(archived) == 0 {
 				archived.Add(html.H4(html.Styles("padding-left:48px"),
 					html.Text("Archived"),
@@ -269,39 +243,73 @@ func displayListBlock(data []itemData) html.Block {
 	)
 }
 
+func listItemBlock(item data.Item) html.Block {
+	var iconClass string
+	switch item.State {
+	case data.ItemOpen:
+		iconClass = "radio grey"
+	default:
+		iconClass = "checkmark green"
+	}
+
+	var focusIcon html.Block
+	switch item.Focus {
+	case data.FocusLater:
+		focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
+	case data.FocusPause:
+		focusIcon = html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-left:10px"))
+	case data.FocusNow:
+		focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
+	case data.FocusWatch:
+		focusIcon = html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-left:10px"))
+	}
+
+	return html.Div(append(html.Class("item"),
+		html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", item.ID)}),
+		html.I(html.Class("large middle aligned icon "+iconClass)),
+		focusIcon,
+		html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
+			html.Text(item.Title),
+		),
+	)
+}
+
 func displayFocusBlock() html.Block {
-	data := getFocusData()
+	focus := data.Focus()
 	var list html.Blocks
-	for _, item := range data {
-		var iconClass string
-		switch item.State {
-		case ItemOpen:
-			iconClass = "radio grey"
-		default:
-			iconClass = "checkmark green"
-		}
-
-		var focusIcon html.Block
-		switch item.Focus {
-		case FocusLater:
-			focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
-		case FocusPause:
-			focusIcon = html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-left:10px"))
-		case FocusNow:
-			focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
-		case FocusWatch:
-			focusIcon = html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-left:10px"))
-		}
-
-		block := html.Div(append(html.Class("item"),
-			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", item.ID)}),
-			html.I(html.Class("large middle aligned icon "+iconClass)),
-			focusIcon,
-			html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
-				html.Text(item.Title),
-			),
-		)
-		list.Add(block)
+	if focus.Focus != nil {
+		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
+			html.I(html.Class("large middle aligned icon yellow star").Styles("padding-right:12px")),
+			html.Text("Focus"),
+		))
+		list.Add(listItemBlock(*focus.Focus))
+	}
+	if len(focus.Pause) > 0 {
+		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
+			html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-right:12px")),
+			html.Text("Paused"),
+		))
+	}
+	for _, item := range focus.Pause {
+		list.Add(listItemBlock(item))
+	}
+	if len(focus.Later) > 0 {
+		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
+			html.I(html.Class("large middle aligned icon red wait").Styles("padding-right:12px")),
+			html.Text("Later"),
+		))
+	}
+	for _, item := range focus.Later {
+		list.Add(listItemBlock(item))
+	}
+	if len(focus.Watch) > 0 {
+		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
+			html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-right:12px")),
+			html.Text("Watched"),
+		))
+	}
+	for _, item := range focus.Watch {
+		list.Add(listItemBlock(item))
 	}
 	return html.Div(html.Class("ui text container"),
 		menuBlock(),

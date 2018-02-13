@@ -19,6 +19,8 @@ import (
 	"log"
 
 	"github.com/mbertschler/blocks/html"
+
+	"github.com/mbertschler/bunny/pkg/data"
 )
 
 func guiAPI() Handler {
@@ -41,7 +43,7 @@ func guiAPI() Handler {
 }
 
 func listViewHandler(_ json.RawMessage) (*Result, error) {
-	res, err := replaceContainer(displayListBlock(getListData()))
+	res, err := replaceContainer(displayListBlock(data.Items()))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
 		if err != nil {
@@ -87,25 +89,37 @@ func listSortHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	sortItem(args.Old, args.New)
+	data.SortItem(args.Old, args.New)
 	return listViewHandler(nil)
 }
 
 func focusSortHandler(in json.RawMessage) (*Result, error) {
 	var args = struct {
-		Old int
-		New int
+		Type string
+		Old  int
+		New  int
 	}{}
 	err := json.Unmarshal(in, &args)
 	if err != nil {
 		return nil, err
 	}
-	sortFocusItem(args.Old, args.New)
+	// var type
+	// switch args.Type {
+	// case "pause":
+	// 	data.State = ItemOpen
+	// case "later":
+	// 	data.State = ItemComplete
+	// 	data.Focus = FocusNone
+	// case "watch":
+	// 	data.State = ItemArchived
+	// 	data.Focus = FocusNone
+	// }
+	// sortFocusItem(0, args.Old, args.New)
 	return focusViewHandler(nil)
 }
 
 func itemNewHandler(in json.RawMessage) (*Result, error) {
-	return replaceContainer(editItemBlock(itemData{}, true))
+	return replaceContainer(editItemBlock(data.Item{}, true))
 }
 
 func itemViewHandler(in json.RawMessage) (*Result, error) {
@@ -114,7 +128,7 @@ func itemViewHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := replaceContainer(displayItemBlock(getItemData(id)))
+	res, err := replaceContainer(displayItemBlock(data.ItemByID(id)))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny Item", fmt.Sprint("/item/", id)})
 		if err != nil {
@@ -134,7 +148,7 @@ func itemEditHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(editItemBlock(getItemData(id), false))
+	return replaceContainer(editItemBlock(data.ItemByID(id), false))
 }
 
 func itemSaveHandler(in json.RawMessage) (*Result, error) {
@@ -149,17 +163,17 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	if arg.New {
-		arg.ID = newItem().ID
+		arg.ID = data.NewItem().ID
 	}
-	data := getItemData(arg.ID)
+	d := data.ItemByID(arg.ID)
 	if len(arg.Title) > 0 {
-		data.Title = arg.Title
+		d.Title = arg.Title
 	}
 	if len(arg.Body) > 0 {
-		data.Body = arg.Body
+		d.Body = arg.Body
 	}
-	setItemData(arg.ID, data)
-	return replaceContainer(displayItemBlock(data))
+	data.SetItem(d)
+	return replaceContainer(displayItemBlock(d))
 }
 
 func itemStateHandler(in json.RawMessage) (*Result, error) {
@@ -171,19 +185,19 @@ func itemStateHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := getItemData(args.ID)
+	d := data.ItemByID(args.ID)
 	switch args.State {
 	case "open":
-		data.State = ItemOpen
+		d.State = data.ItemOpen
 	case "complete":
-		data.State = ItemComplete
-		data.Focus = FocusNone
+		d.State = data.ItemComplete
+		d.Focus = data.FocusNone
 	case "archived":
-		data.State = ItemArchived
-		data.Focus = FocusNone
+		d.State = data.ItemArchived
+		d.Focus = data.FocusNone
 	}
-	setItemData(args.ID, data)
-	return replaceContainer(displayItemBlock(data))
+	data.SetItem(d)
+	return replaceContainer(displayItemBlock(d))
 }
 
 func itemFocusHandler(in json.RawMessage) (*Result, error) {
@@ -195,8 +209,8 @@ func itemFocusHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	data := focusItem(args.ID, args.Focus)
-	return replaceContainer(displayItemBlock(data))
+	d := data.FocusItem(args.ID, args.Focus)
+	return replaceContainer(displayItemBlock(d))
 }
 
 func itemDeleteHandler(in json.RawMessage) (*Result, error) {
@@ -205,8 +219,8 @@ func itemDeleteHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	deleteItem(arg)
-	return replaceContainer(displayListBlock(getListData()))
+	data.DeleteItem(arg)
+	return replaceContainer(displayListBlock(data.Items()))
 }
 
 func replaceContainer(block html.Block) (*Result, error) {
