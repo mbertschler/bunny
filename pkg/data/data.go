@@ -20,7 +20,46 @@ import (
 	"io"
 	"log"
 	"sync"
+
+	"github.com/mbertschler/bunny/pkg/data/memory"
+	"github.com/mbertschler/bunny/pkg/data/stored"
 )
+
+var db *memory.DB
+
+func init() {
+	db = memory.Open()
+	db.SetItem(storedItem(Item{
+		ID:    1,
+		State: ItemOpen,
+		Title: "Hello world!",
+		Body:  "Let's have some fun with bunny!",
+	}))
+	db.SetItem(storedItem(Item{
+		ID:    2,
+		State: ItemComplete,
+		Title: "Look at Bunny",
+		Body:  "By reading this text you alredy completed this item.",
+	}))
+	db.SetItem(storedItem(Item{
+		ID:    3,
+		State: ItemOpen,
+		Title: "Somebody else does it",
+		Body:  "This is something that I am interested in. On the other hand I don't intend to work on it.",
+	}))
+	db.SetItem(storedItem(Item{
+		ID:    4,
+		State: ItemArchived,
+		Title: "Nevermind me, I'm old",
+		Body:  "I am done and no longer relevant, so I got archived.",
+	}))
+	db.SetItem(storedItem(Item{
+		ID:    5,
+		State: ItemOpen,
+		Title: "I started it but don't know how to finish",
+		Body:  "Somebody please help me so that I can complete this item.",
+	}))
+}
 
 var (
 	dataLock  sync.RWMutex
@@ -39,38 +78,7 @@ var (
 		},
 	}
 	dataMaxID = 5
-	dataItems = map[int]Item{
-		1: Item{
-			ID:    1,
-			State: ItemOpen,
-			Title: "Hello world!",
-			Body:  "Let's have some fun with bunny!",
-		},
-		2: Item{
-			ID:    2,
-			State: ItemComplete,
-			Title: "Look at Bunny",
-			Body:  "By reading this text you alredy completed this item.",
-		},
-		3: Item{
-			ID:    3,
-			State: ItemOpen,
-			Title: "Somebody else does it",
-			Body:  "This is something that I am interested in. On the other hand I don't intend to work on it.",
-		},
-		4: Item{
-			ID:    4,
-			State: ItemArchived,
-			Title: "Nevermind me, I'm old",
-			Body:  "I am done and no longer relevant, so I got archived.",
-		},
-		5: Item{
-			ID:    5,
-			State: ItemOpen,
-			Title: "I started it but don't know how to finish",
-			Body:  "Somebody please help me so that I can complete this item.",
-		},
-	}
+	dataItems = map[int]Item{}
 )
 
 type focusList struct {
@@ -116,32 +124,35 @@ const (
 )
 
 func ItemByID(id int) Item {
-	dataLock.RLock()
-	d := dataItems[id]
-	d.Focus = dataFocus.Index[id]
-	dataLock.RUnlock()
-	return d
+	return restoreItem(db.ItemByID(id))
 }
 
 func SetItem(in Item) {
-	dataLock.Lock()
-	_, ok := dataItems[in.ID]
-	if !ok {
-		log.Println("setting nonexistent item?", in.ID, in)
+	db.SetItem(storedItem(in))
+}
+
+func storedItem(in Item) stored.Item {
+	return stored.Item{
+		ID:    in.ID,
+		State: int(in.State),
+		Title: in.Title,
+		Body:  in.Body,
 	}
-	dataItems[in.ID] = in
-	dataLock.Unlock()
+}
+
+func restoreItem(in stored.Item) Item {
+	return Item{
+		ID:    in.ID,
+		State: ItemState(in.State),
+		Title: in.Title,
+		Body:  in.Body,
+	}
 }
 
 func NewItem() Item {
-	item := Item{}
-	dataLock.Lock()
-	dataMaxID++
-	item.ID = dataMaxID
-	dataItems[dataMaxID] = item
-	dataList = append(dataList, dataMaxID)
-	dataLock.Unlock()
-	return item
+	i := Item{}
+	i.ID = db.NewItem(storedItem(i))
+	return i
 }
 
 func SortItem(old, new int) {
@@ -214,26 +225,14 @@ func FocusItem(id int, status string) Item {
 }
 
 func DeleteItem(id int) {
-	dataLock.Lock()
-	newList := make([]int, 0, len(dataList)-1)
-	for _, e := range dataList {
-		if e != id {
-			newList = append(newList, e)
-		}
-	}
-	dataList = newList
-	delete(dataItems, id)
-	dataLock.Unlock()
+	db.DeleteItem(id)
 }
 
 func Items() []Item {
-	dataLock.RLock()
-	out := make([]Item, len(dataList))
-	for i, id := range dataList {
-		out[i] = dataItems[id]
-		out[i].Focus = dataFocus.Index[id]
+	var out []Item
+	for _, i := range db.Items() {
+		out = append(out, restoreItem(i))
 	}
-	dataLock.RUnlock()
 	return out
 }
 
