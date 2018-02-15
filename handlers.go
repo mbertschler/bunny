@@ -43,7 +43,7 @@ func guiAPI() Handler {
 }
 
 func listViewHandler(_ json.RawMessage) (*Result, error) {
-	res, err := replaceContainer(displayListBlock(data.Items()))
+	res, err := replaceContainer(displayListBlock(data.ItemList()))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
 		if err != nil {
@@ -209,7 +209,8 @@ func itemFocusHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	d := data.FocusItem(args.ID, args.Focus)
+	data.SetFocus(1, args.ID, 1)
+	d := data.ItemByID(args.ID)
 	return replaceContainer(displayItemBlock(d))
 }
 
@@ -220,7 +221,7 @@ func itemDeleteHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	data.DeleteItem(arg)
-	return replaceContainer(displayListBlock(data.Items()))
+	return replaceContainer(displayListBlock(data.ItemList()))
 }
 
 func replaceContainer(block html.Block) (*Result, error) {

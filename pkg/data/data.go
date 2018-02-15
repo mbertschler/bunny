@@ -14,12 +14,9 @@
 package data
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"log"
-	"sync"
 
 	"github.com/mbertschler/bunny/pkg/data/memory"
 	"github.com/mbertschler/bunny/pkg/data/stored"
@@ -59,27 +56,22 @@ func init() {
 		Title: "I started it but don't know how to finish",
 		Body:  "Somebody please help me so that I can complete this item.",
 	}))
-}
 
-var (
-	dataLock  sync.RWMutex
-	dataList  = []int{1, 2, 3, 5, 4}
-	dataFocus = focusList{
-		Focussed: true,
-		Focus:    1,
-		Pause:    []int{5},
-		Later:    []int{2},
-		Watch:    []int{3},
-		Index: map[int]FocusState{
-			1: FocusNow,
-			2: FocusLater,
-			3: FocusWatch,
-			5: FocusPause,
-		},
-	}
-	dataMaxID = 5
-	dataItems = map[int]Item{}
-)
+	db.SetList(storedList(List{
+		ID: 1,
+	}))
+
+	db.SortListItemAfter(1, 0)
+	db.SortListItemAfter(2, 1)
+	db.SortListItemAfter(3, 2)
+	db.SortListItemAfter(5, 3)
+	db.SortListItemAfter(4, 5)
+
+	db.SetUserFocus(1, 1, int(FocusNow))
+	db.SetUserFocus(1, 5, int(FocusPause))
+	db.SetUserFocus(1, 2, int(FocusLater))
+	db.SetUserFocus(1, 3, int(FocusWatch))
+}
 
 type focusList struct {
 	Focussed bool
@@ -90,7 +82,7 @@ type focusList struct {
 	Index    map[int]FocusState
 }
 
-type FocusList struct {
+type FocusData struct {
 	Focus *Item
 	Pause []Item
 	Later []Item
@@ -101,6 +93,13 @@ type Item struct {
 	ID    int
 	State ItemState
 	Focus FocusState
+	Title string
+	Body  string
+}
+
+type List struct {
+	ID    int
+	State ItemState
 	Title string
 	Body  string
 }
@@ -149,37 +148,36 @@ func restoreItem(in stored.Item) Item {
 	}
 }
 
+func storedList(in List) stored.List {
+	return stored.List{
+		ID:    in.ID,
+		State: int(in.State),
+		Title: in.Title,
+		Body:  in.Body,
+	}
+}
+
+func restoreList(in stored.List) List {
+	return List{
+		ID:    in.ID,
+		State: ItemState(in.State),
+		Title: in.Title,
+		Body:  in.Body,
+	}
+}
+
 func NewItem() Item {
 	i := Item{}
 	i.ID = db.NewItem(storedItem(i))
 	return i
 }
 
-func SortItem(old, new int) {
-	dataLock.Lock()
-	var err error
-	dataList, err = sortArray(dataList, old, new)
-	if err != nil {
-		log.Println(err)
-	}
-	dataLock.Unlock()
+func SortItem(id, after int) {
+	db.SortListItemAfter(id, after)
 }
 
-func sortFocusItem(typ FocusState, old, new int) {
-	dataLock.Lock()
-	var err error
-	switch typ {
-	case FocusPause:
-		dataFocus.Pause, err = sortArray(dataFocus.Pause, old, new)
-	case FocusLater:
-		dataFocus.Later, err = sortArray(dataFocus.Later, old, new)
-	case FocusWatch:
-		dataFocus.Watch, err = sortArray(dataFocus.Watch, old, new)
-	}
-	if err != nil {
-		log.Println(err)
-	}
-	dataLock.Unlock()
+func SortFocusItem(user, id, after int) {
+	db.SortUserFocusAfter(user, id, after)
 }
 
 // TODO, solve with a loop and benchmark solutions
@@ -197,89 +195,58 @@ func sortArray(arr []int, old, new int) ([]int, error) {
 	return append(append(arr[:new], el), in[new:]...), nil
 }
 
-func FocusItem(id int, status string) Item {
-	// dataLock.Lock()
-	// current := dataFocus.Index[id]
-	// switch status {
-	// case "later":
-	// 	if current == FocusLater {
-	// 		item.Focus = FocusNone
-	// 	} else {
-	// 		item.Focus = FocusLater
-	// 	}
-	// case "focus":
-	// 	if item.Focus == FocusNow {
-	// 		item.Focus = FocusNone
-	// 	} else {
-	// 		item.Focus = FocusNow
-	// 	}
-	// case "watch":
-	// 	if item.Focus == FocusWatch {
-	// 		item.Focus = FocusNone
-	// 	} else {
-	// 		item.Focus = FocusWatch
-	// 	}
-	// }
-	// dataLock.Unlock()
-	return ItemByID(id)
+func SetFocus(user, id int, focus FocusState) {
+	db.SetUserFocus(user, id, int(focus))
 }
 
 func DeleteItem(id int) {
 	db.DeleteItem(id)
 }
 
-func Items() []Item {
+func ItemList() []Item {
 	var out []Item
-	for _, i := range db.Items() {
+	for _, i := range db.ItemList(1) {
 		out = append(out, restoreItem(i))
 	}
 	return out
 }
 
-func setListData(in []int) {
-	dataLock.Lock()
-	dataList = in
-	dataLock.Unlock()
-}
-
-func Focus() FocusList {
-	dataLock.RLock()
-	var out FocusList
-	if dataFocus.Focussed {
-		item := dataItems[dataFocus.Focus]
-		out.Focus = &item
+func FocusList() FocusData {
+	var out FocusData
+	for _, i := range db.AllFocus() {
+		switch FocusState(i.Focus) {
+		case FocusNow:
+			item := restoreItem(i)
+			out.Focus = &item
+		case FocusPause:
+			out.Pause = append(out.Pause, restoreItem(i))
+		case FocusLater:
+			out.Later = append(out.Later, restoreItem(i))
+		case FocusWatch:
+			out.Watch = append(out.Watch, restoreItem(i))
+		}
 	}
-	for _, id := range dataFocus.Pause {
-		out.Pause = append(out.Pause, dataItems[id])
-	}
-	for _, id := range dataFocus.Later {
-		out.Later = append(out.Later, dataItems[id])
-	}
-	for _, id := range dataFocus.Watch {
-		out.Watch = append(out.Watch, dataItems[id])
-	}
-	dataLock.RUnlock()
 	return out
 }
 
 func WriteDebugData(w io.Writer) {
-	dataLock.RLock()
-	var data = struct {
-		List  []int
-		Focus focusList
-		Items map[int]Item
-	}{
-		List:  dataList,
-		Focus: dataFocus,
-		Items: dataItems,
-	}
-	w.Write([]byte("<html><body><pre>"))
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "    ")
-	err := enc.Encode(data)
-	w.Write([]byte("</pre></body></html>"))
-	if err != nil {
-		log.Println(err)
-	}
-	dataLock.RUnlock()
+	// dataLock.RLock()
+	// var data = struct {
+	// 	List  []int
+	// 	Focus focusList
+	// 	Items map[int]Item
+	// }{
+	// 	List:  dataList,
+	// 	Focus: dataFocus,
+	// 	Items: dataItems,
+	// }
+	// w.Write([]byte("<html><body><pre>"))
+	// enc := json.NewEncoder(w)
+	// enc.SetIndent("", "    ")
+	// err := enc.Encode(data)
+	// w.Write([]byte("</pre></body></html>"))
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// dataLock.RUnlock()
 }

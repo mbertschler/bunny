@@ -18,4 +18,29 @@ type Item struct {
 	State int
 	Title string
 	Body  string
+
+	// foreign fields
+	Focus int
+	Next  int
+}
+
+type List struct {
+	ID    int
+	State int
+	Title string
+	Body  string
+	First int
+}
+
+type ListItem struct {
+	ListID int
+	ItemID int
+	Next   int
+}
+
+type UserFocus struct {
+	UserID int
+	Focus  int
+	ItemID int
+	Next   int
 }

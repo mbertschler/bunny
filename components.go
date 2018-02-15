@@ -275,7 +275,7 @@ func listItemBlock(item data.Item) html.Block {
 }
 
 func displayFocusBlock() html.Block {
-	focus := data.Focus()
+	focus := data.FocusList()
 	var list html.Blocks
 	if focus.Focus != nil {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),

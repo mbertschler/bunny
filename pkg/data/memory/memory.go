@@ -26,6 +26,7 @@ import (
 
 const (
 	itemPrefix = "i/"
+	listPrefix = "l/"
 )
 
 func Open() *DB {
@@ -51,8 +52,18 @@ func itemKey(id int) string {
 	return itemPrefix + strconv.Itoa(id)
 }
 
+func listKey(id int) string {
+	return listPrefix + strconv.Itoa(id)
+}
+
 func itemID(id string) int {
 	id = strings.TrimPrefix(id, itemPrefix)
+	i, _ := strconv.Atoi(id)
+	return i
+}
+
+func listID(id string) int {
+	id = strings.TrimPrefix(id, listPrefix)
 	i, _ := strconv.Atoi(id)
 	return i
 }
@@ -72,7 +83,23 @@ func (d *DB) ItemByID(id int) stored.Item {
 	return item
 }
 
-func (d *DB) Items() []stored.Item {
+func (d *DB) ItemList(id int) []stored.Item {
+	var items []stored.Item
+	err := d.db.View(func(tx *buntdb.Tx) error {
+		return tx.Ascend("", func(key, val string) bool {
+			var item stored.Item
+			decode(val, &item)
+			items = append(items, item)
+			return true
+		})
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	return items
+}
+
+func (d *DB) AllFocus() []stored.Item {
 	var items []stored.Item
 	err := d.db.View(func(tx *buntdb.Tx) error {
 		return tx.Ascend("", func(key, val string) bool {
@@ -91,6 +118,13 @@ func (d *DB) Items() []stored.Item {
 func (d *DB) SetItem(i stored.Item) {
 	d.db.Update(func(tx *buntdb.Tx) error {
 		tx.Set(itemKey(i.ID), encode(i), nil)
+		return nil
+	})
+}
+
+func (d *DB) SetList(l stored.List) {
+	d.db.Update(func(tx *buntdb.Tx) error {
+		tx.Set(listKey(l.ID), encode(l), nil)
 		return nil
 	})
 }
@@ -116,6 +150,40 @@ func (d *DB) NewItem(i stored.Item) int {
 		return nil
 	})
 	return id
+}
+
+func (d *DB) SortListItemAfter(id, after int) {
+	// var id int
+	// d.db.Update(func(tx *buntdb.Tx) error {
+	// 	tx.DescendKeys(itemPrefix, func(key, value string) bool {
+	// 		id = itemID(key)
+	// 		return false
+	// 	})
+	// 	id++
+	// 	i.ID = id
+	// 	tx.Set(itemKey(i.ID), encode(i), nil)
+	// 	return nil
+	// })
+	// return id
+}
+
+func (d *DB) SortUserFocusAfter(user, id, after int) {
+	// var id int
+	// d.db.Update(func(tx *buntdb.Tx) error {
+	// 	tx.DescendKeys(itemPrefix, func(key, value string) bool {
+	// 		id = itemID(key)
+	// 		return false
+	// 	})
+	// 	id++
+	// 	i.ID = id
+	// 	tx.Set(itemKey(i.ID), encode(i), nil)
+	// 	return nil
+	// })
+	// return id
+}
+
+func (d *DB) SetUserFocus(user, id, focus int) {
+
 }
 
 func encode(in interface{}) string {
