@@ -25,8 +25,10 @@ import (
 )
 
 const (
-	itemPrefix = "i/"
-	listPrefix = "l/"
+	itemPrefix      = "i/"
+	listPrefix      = "l/"
+	listItemPrefix  = "li/"
+	userFocusPrefix = "uf/"
 )
 
 func Open() *DB {
@@ -52,20 +54,33 @@ func itemKey(id int) string {
 	return itemPrefix + strconv.Itoa(id)
 }
 
-func listKey(id int) string {
-	return listPrefix + strconv.Itoa(id)
-}
-
 func itemID(id string) int {
 	id = strings.TrimPrefix(id, itemPrefix)
 	i, _ := strconv.Atoi(id)
 	return i
+}
+func listKey(id int) string {
+	return listPrefix + strconv.Itoa(id)
 }
 
 func listID(id string) int {
 	id = strings.TrimPrefix(id, listPrefix)
 	i, _ := strconv.Atoi(id)
 	return i
+}
+
+func userFocusKey(user, item, focus int) string {
+	return userFocusPrefix + strconv.Itoa(user) +
+		"/" + strconv.Itoa(item) + "/" + strconv.Itoa(focus)
+}
+
+func userFocusIDs(id string) (user, item, focus int) {
+	id = strings.TrimPrefix(id, userFocusPrefix)
+	parts := strings.Split(id, "/")
+	user, _ = strconv.Atoi(parts[0])
+	item, _ = strconv.Atoi(parts[1])
+	focus, _ = strconv.Atoi(parts[2])
+	return
 }
 
 func (d *DB) ItemByID(id int) stored.Item {
@@ -86,7 +101,7 @@ func (d *DB) ItemByID(id int) stored.Item {
 func (d *DB) ItemList(id int) []stored.Item {
 	var items []stored.Item
 	err := d.db.View(func(tx *buntdb.Tx) error {
-		return tx.Ascend("", func(key, val string) bool {
+		return tx.AscendKeys(itemPrefix+"*", func(key, val string) bool {
 			var item stored.Item
 			decode(val, &item)
 			items = append(items, item)
@@ -99,10 +114,10 @@ func (d *DB) ItemList(id int) []stored.Item {
 	return items
 }
 
-func (d *DB) AllFocus() []stored.Item {
+func (d *DB) FocusList(user int) []stored.Item {
 	var items []stored.Item
 	err := d.db.View(func(tx *buntdb.Tx) error {
-		return tx.Ascend("", func(key, val string) bool {
+		return tx.AscendKeys(userFocusPrefix+"*", func(key, val string) bool {
 			var item stored.Item
 			decode(val, &item)
 			items = append(items, item)
@@ -182,8 +197,25 @@ func (d *DB) SortUserFocusAfter(user, id, after int) {
 	// return id
 }
 
-func (d *DB) SetUserFocus(user, id, focus int) {
-
+func (d *DB) SetUserFocus(user, item, focus int) {
+	var uf = stored.UserFocus{
+		UserID: user,
+		ItemID: item,
+		Focus:  focus,
+	}
+	d.db.Update(func(tx *buntdb.Tx) error {
+		var found string
+		tx.AscendRange("", userFocusKey(user, item, 0),
+			userFocusKey(user, item+1, 0), func(key, value string) bool {
+				found = key
+				return true
+			})
+		if found != "" {
+			tx.Delete(found)
+		}
+		tx.Set(userFocusKey(user, item, focus), encode(uf), nil)
+		return nil
+	})
 }
 
 func encode(in interface{}) string {

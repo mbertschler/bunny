@@ -123,7 +123,9 @@ const (
 )
 
 func ItemByID(id int) Item {
-	return restoreItem(db.ItemByID(id))
+	i := restoreItem(db.ItemByID(id))
+
+	return i
 }
 
 func SetItem(in Item) {
@@ -199,6 +201,11 @@ func SetFocus(user, id int, focus FocusState) {
 	db.SetUserFocus(user, id, int(focus))
 }
 
+func FocusByUserItem(user, item int) FocusState {
+	// db.UserFocus(user, id, int(focus))
+	return 0
+}
+
 func DeleteItem(id int) {
 	db.DeleteItem(id)
 }
@@ -213,7 +220,7 @@ func ItemList() []Item {
 
 func FocusList() FocusData {
 	var out FocusData
-	for _, i := range db.AllFocus() {
+	for _, i := range db.FocusList(1) {
 		switch FocusState(i.Focus) {
 		case FocusNow:
 			item := restoreItem(i)
