@@ -59,6 +59,7 @@ func itemID(id string) int {
 	i, _ := strconv.Atoi(id)
 	return i
 }
+
 func listKey(id int) string {
 	return listPrefix + strconv.Itoa(id)
 }
@@ -67,6 +68,19 @@ func listID(id string) int {
 	id = strings.TrimPrefix(id, listPrefix)
 	i, _ := strconv.Atoi(id)
 	return i
+}
+
+func listItemKey(listID, itemID int) string {
+	return listItemPrefix + strconv.Itoa(listID) +
+		"/" + strconv.Itoa(itemID)
+}
+
+func listItemID(id string) (listID, itemID int) {
+	id = strings.TrimPrefix(id, listItemPrefix)
+	parts := strings.Split(id, "/")
+	listID, _ = strconv.Atoi(parts[0])
+	itemID, _ = strconv.Atoi(parts[1])
+	return
 }
 
 func userFocusKey(user, item, focus int) string {
@@ -144,6 +158,14 @@ func (d *DB) SetList(l stored.List) {
 	})
 }
 
+func (d *DB) DeleteList(id int) {
+	d.db.Update(func(tx *buntdb.Tx) error {
+		tx.Delete(listKey(id))
+		// TODO: delete from referenced tables
+		return nil
+	})
+}
+
 func (d *DB) DeleteItem(id int) {
 	d.db.Update(func(tx *buntdb.Tx) error {
 		tx.Delete(itemKey(id))
@@ -167,9 +189,21 @@ func (d *DB) NewItem(i stored.Item) int {
 	return id
 }
 
-func (d *DB) SortListItemAfter(id, after int) {
-	// var id int
+func (d *DB) SortListItemAfter(listID, itemID, after int) {
+	// var nextID int
 	// d.db.Update(func(tx *buntdb.Tx) error {
+	// 	afterKey := listItemKey(listID, after)
+	// 	val, err := tx.Get(afterKey)
+	// 	if err == nil {
+	// 		var li stored.ListItem
+	// 		decode(val, &li)
+	// 		nextID = li.Next
+	// 		li.Next = itemID
+	// 		tx.Set(afterKey, encode(li), nil)
+	// 	} else {
+	// 		log.Println(err)
+	// 	}
+
 	// 	tx.DescendKeys(itemPrefix, func(key, value string) bool {
 	// 		id = itemID(key)
 	// 		return false
@@ -198,24 +232,24 @@ func (d *DB) SortUserFocusAfter(user, id, after int) {
 }
 
 func (d *DB) SetUserFocus(user, item, focus int) {
-	var uf = stored.UserFocus{
-		UserID: user,
-		ItemID: item,
-		Focus:  focus,
-	}
-	d.db.Update(func(tx *buntdb.Tx) error {
-		var found string
-		tx.AscendRange("", userFocusKey(user, item, 0),
-			userFocusKey(user, item+1, 0), func(key, value string) bool {
-				found = key
-				return true
-			})
-		if found != "" {
-			tx.Delete(found)
-		}
-		tx.Set(userFocusKey(user, item, focus), encode(uf), nil)
-		return nil
-	})
+	// var uf = stored.UserFocus{
+	// 	UserID: user,
+	// 	ItemID: item,
+	// 	Focus:  focus,
+	// }
+	// d.db.Update(func(tx *buntdb.Tx) error {
+	// 	var found string
+	// 	tx.AscendRange("", userFocusKey(user, focus, 0),
+	// 		userFocusKey(user, focus+1, 0), func(key, value string) bool {
+	// 			found = key
+	// 			return true
+	// 		})
+	// 	if found != "" {
+	// 		tx.Delete(found)
+	// 	}
+	// 	tx.Set(userFocusKey(user, item, focus), encode(uf), nil)
+	// 	return nil
+	// })
 }
 
 func encode(in interface{}) string {

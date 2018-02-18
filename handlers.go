@@ -89,7 +89,7 @@ func listSortHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	data.SortItem(args.Old, args.New)
+	data.SortItem(1, args.Old, args.New)
 	return listViewHandler(nil)
 }
 

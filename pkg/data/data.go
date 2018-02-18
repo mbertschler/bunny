@@ -61,11 +61,11 @@ func init() {
 		ID: 1,
 	}))
 
-	db.SortListItemAfter(1, 0)
-	db.SortListItemAfter(2, 1)
-	db.SortListItemAfter(3, 2)
-	db.SortListItemAfter(5, 3)
-	db.SortListItemAfter(4, 5)
+	db.SortListItemAfter(1, 1, 0)
+	db.SortListItemAfter(1, 2, 1)
+	db.SortListItemAfter(1, 3, 2)
+	db.SortListItemAfter(1, 5, 3)
+	db.SortListItemAfter(1, 4, 5)
 
 	db.SetUserFocus(1, 1, int(FocusNow))
 	db.SetUserFocus(1, 5, int(FocusPause))
@@ -124,7 +124,6 @@ const (
 
 func ItemByID(id int) Item {
 	i := restoreItem(db.ItemByID(id))
-
 	return i
 }
 
@@ -174,8 +173,8 @@ func NewItem() Item {
 	return i
 }
 
-func SortItem(id, after int) {
-	db.SortListItemAfter(id, after)
+func SortItem(listID, itemID, after int) {
+	db.SortListItemAfter(listID, itemID, after)
 }
 
 func SortFocusItem(user, id, after int) {
@@ -183,7 +182,7 @@ func SortFocusItem(user, id, after int) {
 }
 
 // TODO, solve with a loop and benchmark solutions
-func sortArray(arr []int, old, new int) ([]int, error) {
+func sortArrayOld(arr []int, old, new int) ([]int, error) {
 	max := len(arr)
 	if !(old < max && old >= 0 &&
 		new < max && new >= 0) {
@@ -195,6 +194,30 @@ func sortArray(arr []int, old, new int) ([]int, error) {
 	in := make([]int, len(arr))
 	copy(in, arr)
 	return append(append(arr[:new], el), in[new:]...), nil
+}
+
+func sortArray(in []int, old, new int) ([]int, error) {
+	max := len(in)
+	if !(old < max && old >= 0 &&
+		new < max && new >= 0) {
+		return in, errors.New(fmt.Sprintln(
+			"invalid sorting from", old, "to", new, "max", max))
+	}
+	out := make([]int, len(in))
+	i, j := 0, 0
+	for j < max {
+		if j == new {
+			out[j] = in[old]
+			j++
+			continue
+		}
+		if i != old {
+			out[j] = in[i]
+			j++
+		}
+		i++
+	}
+	return out, nil
 }
 
 func SetFocus(user, id int, focus FocusState) {

@@ -21,7 +21,6 @@ type Item struct {
 
 	// foreign fields
 	Focus int
-	Next  int
 }
 
 type List struct {
@@ -29,18 +28,67 @@ type List struct {
 	State int
 	Title string
 	Body  string
-	First int
 }
 
 type ListItem struct {
-	ListID int
 	ItemID int
-	Next   int
 }
 
 type UserFocus struct {
-	UserID int
-	Focus  int
 	ItemID int
-	Next   int
 }
+
+/*
+Linked List Sorting
+===================
+
+Key: li/listID/itemID
+
+li/1/3 {
+	ListID: 1
+	ItemID: 3
+	Next: 8
+}
+
+li/1/8 {
+	ListID: 1
+	ItemID: 8
+	Next: 6
+}
+
+li/1/6 {
+	ListID: 1
+	ItemID: 6
+	Next: 0
+}
+
+steps to insert an item
+-----------------------
+- afterItem = get(afterID)
+- nextID = afterItem.Next
+- afterItem.Next = insertID
+- set(afterItem)
+- insertItem.Next = nextID
+- set(insertItem)
+
+*/
+
+/*
+Ordered List
+============
+
+Key: li/listID/index
+
+li/1/1 {
+	ItemID: 3
+}
+
+li/1/2 {
+	ItemID: 8
+}
+
+li/1/3 {
+	ItemID: 6
+}
+
+*/
