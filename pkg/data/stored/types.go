@@ -35,7 +35,7 @@ type ListItem struct {
 }
 
 type UserFocus struct {
-	ItemID int
+	Focus int
 }
 
 /*

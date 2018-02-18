@@ -103,7 +103,7 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderListPage(w http.ResponseWriter, r *http.Request) {
-	err := html.Render(pageBlock(displayListBlock(data.ItemList())), w)
+	err := html.Render(pageBlock(displayListBlock(data.UserItemList(1, 1))), w)
 	if err != nil {
 		log.Println(err)
 	}

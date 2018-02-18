@@ -146,6 +146,7 @@ func restoreItem(in stored.Item) Item {
 		State: ItemState(in.State),
 		Title: in.Title,
 		Body:  in.Body,
+		Focus: FocusState(in.Focus),
 	}
 }
 
@@ -233,9 +234,17 @@ func DeleteItem(id int) {
 	db.DeleteItem(id)
 }
 
-func ItemList() []Item {
+func ItemList(id int) []Item {
 	var out []Item
-	for _, i := range db.ItemList(1) {
+	for _, i := range db.ItemList(id) {
+		out = append(out, restoreItem(i))
+	}
+	return out
+}
+
+func UserItemList(user, id int) []Item {
+	var out []Item
+	for _, i := range db.UserItemList(user, id) {
 		out = append(out, restoreItem(i))
 	}
 	return out
