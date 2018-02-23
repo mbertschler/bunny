@@ -96,7 +96,11 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(pageBlock(displayItemBlock(data.ItemByID(id))), w)
+	item, err := data.ItemByID(id)
+	if err != nil {
+		log.Println(err)
+	}
+	err = html.Render(pageBlock(displayItemBlock(item)), w)
 	if err != nil {
 		log.Println(err)
 	}

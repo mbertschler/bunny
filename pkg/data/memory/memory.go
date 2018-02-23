@@ -96,19 +96,44 @@ func userFocusIDs(id string) (user, item int) {
 	return
 }
 
-func (d *DB) ItemByID(id int) stored.Item {
+func (d *DB) ItemByID(id int) (stored.Item, error) {
 	var val string
 	var err error
 	err = d.db.View(func(tx *buntdb.Tx) error {
 		val, err = tx.Get(itemKey(id))
 		return err
 	})
-	if err != nil {
-		log.Println(err)
-	}
 	var item stored.Item
-	decode(val, &item)
-	return item
+	if err != nil {
+		return item, err
+	}
+	err = decode(val, &item)
+	return item, err
+}
+
+func (d *DB) UserItemByID(user, id int) (stored.Item, error) {
+	var item stored.Item
+	err := d.db.View(func(tx *buntdb.Tx) error {
+		itemStr, err := tx.Get(itemKey(id))
+		if err != nil {
+			return err
+		}
+		err = decode(itemStr, &item)
+		if err != nil {
+			return err
+		}
+		focusStr, err := tx.Get(userFocusKey(user, id))
+		if err == nil {
+			var focus stored.UserFocus
+			err = decode(focusStr, &focus)
+			if err != nil {
+				return err
+			}
+			item.Focus = focus.Focus
+		}
+		return err
+	})
+	return item, err
 }
 
 func (d *DB) ItemList(id int) []stored.Item {
@@ -174,17 +199,26 @@ func (d *DB) FocusList(user int) []stored.Item {
 	return items
 }
 
-func (d *DB) SetItem(i stored.Item) {
-	d.db.Update(func(tx *buntdb.Tx) error {
-		tx.Set(itemKey(i.ID), encode(i), nil)
-		return nil
+func (d *DB) SetItem(i stored.Item) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		val, err := encode(i)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(itemKey(i.ID), val, nil)
+		return err
 	})
 }
 
-func (d *DB) SetList(l stored.List) {
-	d.db.Update(func(tx *buntdb.Tx) error {
-		tx.Set(listKey(l.ID), encode(l), nil)
+func (d *DB) SetList(l stored.List) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
 		return nil
+		val, err := encode(l)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(listKey(l.ID), val, nil)
+		return err
 	})
 }
 
@@ -196,27 +230,34 @@ func (d *DB) DeleteList(id int) {
 	})
 }
 
-func (d *DB) DeleteItem(id int) {
-	d.db.Update(func(tx *buntdb.Tx) error {
-		tx.Delete(itemKey(id))
+func (d *DB) DeleteItem(id int) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(itemKey(id))
 		// TODO: delete from referenced tables
-		return nil
+		return err
 	})
 }
 
-func (d *DB) NewItem(i stored.Item) int {
+func (d *DB) NewItem(i stored.Item) (int, error) {
 	var id int
-	d.db.Update(func(tx *buntdb.Tx) error {
-		tx.DescendKeys(itemPrefix, func(key, value string) bool {
+	err := d.db.Update(func(tx *buntdb.Tx) error {
+		err := tx.DescendKeys(itemPrefix, func(key, value string) bool {
 			id = itemID(key)
 			return false
 		})
+		if err != nil {
+			return err
+		}
 		id++
 		i.ID = id
-		tx.Set(itemKey(i.ID), encode(i), nil)
-		return nil
+		val, err := encode(i)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(itemKey(i.ID), val, nil)
+		return err
 	})
-	return id
+	return id, err
 }
 
 func (d *DB) SortListItemAfter(listID, itemID, after int) {
@@ -261,27 +302,32 @@ func (d *DB) SortUserFocusAfter(user, id, after int) {
 	// return id
 }
 
-func (d *DB) SetUserFocus(user, item, focus int) {
+func (d *DB) SetUserFocus(user, item, focus int) error {
 	var uf = stored.UserFocus{
 		Focus: focus,
 	}
-	d.db.Update(func(tx *buntdb.Tx) error {
-		tx.Set(userFocusKey(user, item), encode(uf), nil)
-		return nil
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		val, err := encode(uf)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(userFocusKey(user, item), val, nil)
+		return err
 	})
 }
 
-func encode(in interface{}) string {
+func encode(in interface{}) (string, error) {
 	out, err := json.Marshal(in)
 	if err != nil {
-		log.Fatal(err)
+		return string(out), stored.WithCause(err, stored.CauseSerialize)
 	}
-	return string(out)
+	return string(out), nil
 }
 
-func decode(in string, dest interface{}) {
+func decode(in string, dest interface{}) error {
 	err := json.Unmarshal([]byte(in), dest)
 	if err != nil {
-		log.Fatal(err)
+		return stored.WithCause(err, stored.CauseMalformed)
 	}
+	return nil
 }

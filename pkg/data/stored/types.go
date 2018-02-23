@@ -13,6 +13,30 @@
 
 package stored
 
+type Cause int8
+
+const (
+	CauseNotFound Cause = iota + 1
+	CauseMalformed
+	CauseSerialize
+)
+
+type CauseError struct {
+	Cause Cause
+	Err   error
+}
+
+func (e CauseError) Error() string {
+	return e.Err.Error()
+}
+
+func WithCause(err error, cause Cause) CauseError {
+	return CauseError{
+		Cause: cause,
+		Err:   err,
+	}
+}
+
 type Item struct {
 	ID    int
 	State int

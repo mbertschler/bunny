@@ -128,7 +128,8 @@ func itemViewHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := replaceContainer(displayItemBlock(data.ItemByID(id)))
+	ui, _ := data.UserItemByID(1, id)
+	res, err := replaceContainer(displayItemBlock(ui))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny Item", fmt.Sprint("/item/", id)})
 		if err != nil {
@@ -148,7 +149,8 @@ func itemEditHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(editItemBlock(data.ItemByID(id), false))
+	ui, _ := data.UserItemByID(1, id)
+	return replaceContainer(editItemBlock(ui, false))
 }
 
 func itemSaveHandler(in json.RawMessage) (*Result, error) {
@@ -163,9 +165,13 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	if arg.New {
-		arg.ID = data.NewItem().ID
+		newItem, err := data.NewItem()
+		if err != nil {
+			return nil, err
+		}
+		arg.ID = newItem.ID
 	}
-	d := data.ItemByID(arg.ID)
+	d, _ := data.UserItemByID(1, arg.ID)
 	if len(arg.Title) > 0 {
 		d.Title = arg.Title
 	}
@@ -185,16 +191,14 @@ func itemStateHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	d := data.ItemByID(args.ID)
+	d, _ := data.UserItemByID(1, args.ID)
 	switch args.State {
 	case "open":
 		d.State = data.ItemOpen
 	case "complete":
 		d.State = data.ItemComplete
-		d.Focus = data.FocusNone
 	case "archived":
 		d.State = data.ItemArchived
-		d.Focus = data.FocusNone
 	}
 	data.SetItem(d)
 	return replaceContainer(displayItemBlock(d))
@@ -210,7 +214,7 @@ func itemFocusHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	data.SetFocus(1, args.ID, 1)
-	d := data.ItemByID(args.ID)
+	d, _ := data.UserItemByID(1, args.ID)
 	return replaceContainer(displayItemBlock(d))
 }
 

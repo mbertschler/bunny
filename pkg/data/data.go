@@ -26,6 +26,10 @@ var db *memory.DB
 
 func init() {
 	db = memory.Open()
+	setupTestdata()
+}
+
+func setupTestdata() {
 	db.SetItem(storedItem(Item{
 		ID:    1,
 		State: ItemOpen,
@@ -122,9 +126,16 @@ const (
 	FocusWatch
 )
 
-func ItemByID(id int) Item {
-	i := restoreItem(db.ItemByID(id))
-	return i
+func ItemByID(id int) (Item, error) {
+	stored, err := db.ItemByID(id)
+	i := restoreItem(stored)
+	return i, err
+}
+
+func UserItemByID(user, id int) (Item, error) {
+	stored, err := db.UserItemByID(user, id)
+	i := restoreItem(stored)
+	return i, err
 }
 
 func SetItem(in Item) {
@@ -168,10 +179,11 @@ func restoreList(in stored.List) List {
 	}
 }
 
-func NewItem() Item {
+func NewItem() (Item, error) {
 	i := Item{}
-	i.ID = db.NewItem(storedItem(i))
-	return i
+	var err error
+	i.ID, err = db.NewItem(storedItem(i))
+	return i, err
 }
 
 func SortItem(listID, itemID, after int) {
@@ -230,8 +242,8 @@ func FocusByUserItem(user, item int) FocusState {
 	return 0
 }
 
-func DeleteItem(id int) {
-	db.DeleteItem(id)
+func DeleteItem(id int) error {
+	return db.DeleteItem(id)
 }
 
 func ItemList(id int) []Item {
