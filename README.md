@@ -1,14 +1,17 @@
-Bunny project management tool
-=============================
+Bunny work management tool
+==========================
+[![Build Status](https://travis-ci.org/mbertschler/bunny.svg?branch=master)](https://travis-ci.org/mbertschler/bunny)
+[![GoDoc](https://godoc.org/github.com/mbertschler/bunny?status.svg)](https://godoc.org/github.com/mbertschler/bunny)
 ![status: not yet usable](https://img.shields.io/badge/status-not%20yet%20usable-red.svg)
+[![GoDoc](https://goreportcard.com/badge/github.com/mbertschler/bunny)](https://goreportcard.com/report/github.com/mbertschler/bunny)
 
-Bunny will be a simple and modern project management tool for individuals
+Bunny will be a simple and modern work management tool for individuals
 and teams. It is not usable yet.
 
-Why another project management tool?
-------------------------------------
+Why another work management tool?
+---------------------------------
 Bunny is an experimental project with the goal of creating a simple and
-efficient project management tool.
+efficient work management tool.
 
 Building
 --------
