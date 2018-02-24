@@ -205,6 +205,22 @@ func (d *DB) SetItem(i stored.Item) error {
 		if err != nil {
 			return err
 		}
+		key := itemKey(i.ID)
+		_, err = tx.Get(key)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(key, val, nil)
+		return err
+	})
+}
+
+func (d *DB) ForceSetItem(i stored.Item) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		val, err := encode(i)
+		if err != nil {
+			return err
+		}
 		_, _, err = tx.Set(itemKey(i.ID), val, nil)
 		return err
 	})
@@ -212,7 +228,6 @@ func (d *DB) SetItem(i stored.Item) error {
 
 func (d *DB) SetList(l stored.List) error {
 	return d.db.Update(func(tx *buntdb.Tx) error {
-		return nil
 		val, err := encode(l)
 		if err != nil {
 			return err
@@ -260,7 +275,7 @@ func (d *DB) NewItem(i stored.Item) (int, error) {
 	return id, err
 }
 
-func (d *DB) SortListItemAfter(listID, itemID, after int) {
+func (d *DB) SortListItemAfter(listID, itemID, after int) error {
 	// var nextID int
 	// d.db.Update(func(tx *buntdb.Tx) error {
 	// 	afterKey := listItemKey(listID, after)
@@ -285,9 +300,10 @@ func (d *DB) SortListItemAfter(listID, itemID, after int) {
 	// 	return nil
 	// })
 	// return id
+	return nil
 }
 
-func (d *DB) SortUserFocusAfter(user, id, after int) {
+func (d *DB) SortUserFocusAfter(user, id, after int) error {
 	// var id int
 	// d.db.Update(func(tx *buntdb.Tx) error {
 	// 	tx.DescendKeys(itemPrefix, func(key, value string) bool {
@@ -300,6 +316,7 @@ func (d *DB) SortUserFocusAfter(user, id, after int) {
 	// 	return nil
 	// })
 	// return id
+	return nil
 }
 
 func (d *DB) SetUserFocus(user, item, focus int) error {
@@ -314,6 +331,21 @@ func (d *DB) SetUserFocus(user, item, focus int) error {
 		_, _, err = tx.Set(userFocusKey(user, item), val, nil)
 		return err
 	})
+}
+
+func (d *DB) ListByID(id int) (stored.List, error) {
+	var val string
+	var err error
+	err = d.db.View(func(tx *buntdb.Tx) error {
+		val, err = tx.Get(listKey(id))
+		return err
+	})
+	var list stored.List
+	if err != nil {
+		return list, err
+	}
+	err = decode(val, &list)
+	return list, err
 }
 
 func encode(in interface{}) (string, error) {

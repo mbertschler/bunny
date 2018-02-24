@@ -32,7 +32,7 @@ func TestItemByID(t *testing.T) {
 	if !reflect.DeepEqual(item, target) {
 		t.Error("item and target are not equal", item, target)
 	}
-	item, err = ItemByID(22)
+	_, err = ItemByID(22)
 	if err == nil {
 		t.Error("should cause an error")
 	}
@@ -54,7 +54,7 @@ func TestUserItemByID(t *testing.T) {
 	if !reflect.DeepEqual(item, target) {
 		t.Error("item and target are not equal", item, target)
 	}
-	item, err = UserItemByID(17, 22)
+	_, err = UserItemByID(17, 22)
 	if err == nil {
 		t.Error("should cause an error")
 	}
@@ -71,6 +71,31 @@ func TestDeleteItem(t *testing.T) {
 		t.Error(err)
 	}
 	_, err = ItemByID(2)
+	if err == nil {
+		t.Error("should cause an error")
+	}
+}
+
+func TestSetItem(t *testing.T) {
+	resetDB()
+	item, err := ItemByID(2)
+	if err != nil {
+		t.Error(err)
+	}
+	item.Title = "just set"
+	err = SetItem(item)
+	if err != nil {
+		t.Error(err)
+	}
+	item, err = ItemByID(2)
+	if err != nil {
+		t.Error(err)
+	}
+	if item.Title != "just set" {
+		t.Error("title was not set", item.Title)
+	}
+	item.ID = 22
+	err = SetItem(item)
 	if err == nil {
 		t.Error("should cause an error")
 	}

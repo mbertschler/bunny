@@ -1,6 +1,8 @@
 package data
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -91,4 +93,42 @@ func BenchmarkCounterSort(b *testing.B) {
 			sortArray(test.Input, test.OldIndex, test.NewIndex)
 		}
 	}
+}
+
+func sortArrayOld(arr []int, old, new int) ([]int, error) {
+	max := len(arr)
+	if !(old < max && old >= 0 &&
+		new < max && new >= 0) {
+		return arr, errors.New(fmt.Sprintln(
+			"invalid sorting from", old, "to", new, "max", max))
+	}
+	el := arr[old]
+	arr = append(arr[:old], arr[old+1:]...)
+	in := make([]int, len(arr))
+	copy(in, arr)
+	return append(append(arr[:new], el), in[new:]...), nil
+}
+
+func sortArray(in []int, old, new int) ([]int, error) {
+	max := len(in)
+	if !(old < max && old >= 0 &&
+		new < max && new >= 0) {
+		return in, errors.New(fmt.Sprintln(
+			"invalid sorting from", old, "to", new, "max", max))
+	}
+	out := make([]int, len(in))
+	i, j := 0, 0
+	for j < max {
+		if j == new {
+			out[j] = in[old]
+			j++
+			continue
+		}
+		if i != old {
+			out[j] = in[i]
+			j++
+		}
+		i++
+	}
+	return out, nil
 }
