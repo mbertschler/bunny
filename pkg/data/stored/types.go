@@ -54,6 +54,11 @@ type List struct {
 	Body  string
 }
 
+type User struct {
+	ID   int
+	Name string
+}
+
 type ListItem struct {
 	ItemID int
 }

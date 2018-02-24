@@ -11,6 +11,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate stringer -type=ItemState,FocusState
+
 package data
 
 import (
@@ -26,6 +28,10 @@ func init() {
 }
 
 func setupTestdata() {
+	forceSetUser(User{
+		ID:   1,
+		Name: "martin",
+	})
 	forceSetItem(Item{
 		ID:    1,
 		State: ItemOpen,
@@ -57,7 +63,7 @@ func setupTestdata() {
 		Body:  "Somebody please help me so that I can complete this item.",
 	})
 
-	SetList(List{
+	forceSetList(List{
 		ID: 1,
 	})
 
@@ -89,6 +95,11 @@ type FocusData struct {
 	Watch []Item
 }
 
+type User struct {
+	ID   int
+	Name string
+}
+
 type Item struct {
 	ID    int
 	State ItemState
@@ -102,6 +113,7 @@ type List struct {
 	State ItemState
 	Title string
 	Body  string
+	Items []Item
 }
 
 type ItemState int8
@@ -140,6 +152,20 @@ func SetItem(in Item) error {
 
 func forceSetItem(in Item) error {
 	return db.ForceSetItem(storedItem(in))
+}
+
+func storedUser(in User) stored.User {
+	return stored.User{
+		ID:   in.ID,
+		Name: in.Name,
+	}
+}
+
+func restoreUser(in stored.User) User {
+	return User{
+		ID:   in.ID,
+		Name: in.Name,
+	}
 }
 
 func storedItem(in Item) stored.Item {
@@ -186,46 +212,53 @@ func NewItem() (Item, error) {
 	return i, err
 }
 
-func SortItem(listID, itemID, after int) {
-	db.SortListItemAfter(listID, itemID, after)
+func SortItem(listID, itemID, after int) error {
+	return db.SortListItemAfter(listID, itemID, after)
 }
 
-func SortFocusItem(user, id, after int) {
-	db.SortUserFocusAfter(user, id, after)
+func SortFocusItem(user, id, after int) error {
+	return db.SortUserFocusAfter(user, id, after)
 }
 
-func SetFocus(user, id int, focus FocusState) {
-	db.SetUserFocus(user, id, int(focus))
-}
-
-func FocusByUserItem(user, item int) FocusState {
-	// db.UserFocus(user, id, int(focus))
-	return 0
+func SetFocus(user, id int, focus FocusState) error {
+	return db.SetUserFocus(user, id, int(focus))
 }
 
 func DeleteItem(id int) error {
 	return db.DeleteItem(id)
 }
 
-func ItemList(id int) []Item {
+func ItemList(id int) ([]Item, error) {
 	var out []Item
-	for _, i := range db.ItemList(id) {
+	_, items, err := db.ItemList(id)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range items {
 		out = append(out, restoreItem(i))
 	}
-	return out
+	return out, nil
 }
 
-func UserItemList(user, id int) []Item {
+func UserItemList(user, id int) ([]Item, error) {
 	var out []Item
-	for _, i := range db.UserItemList(user, id) {
+	_, items, err := db.UserItemList(user, id)
+	if err != nil {
+		return nil, err
+	}
+	for _, i := range items {
 		out = append(out, restoreItem(i))
 	}
-	return out
+	return out, nil
 }
 
-func FocusList() FocusData {
+func FocusList(user int) (FocusData, error) {
 	var out FocusData
-	for _, i := range db.FocusList(1) {
+	list, err := db.FocusList(user)
+	if err != nil {
+		return out, err
+	}
+	for _, i := range list {
 		switch FocusState(i.Focus) {
 		case FocusNow:
 			item := restoreItem(i)
@@ -238,7 +271,7 @@ func FocusList() FocusData {
 			out.Watch = append(out.Watch, restoreItem(i))
 		}
 	}
-	return out
+	return out, nil
 }
 
 func SortListItemAfter(list, item, after int) error {
@@ -257,4 +290,18 @@ func ListByID(id int) (List, error) {
 
 func SetList(in List) error {
 	return db.SetList(storedList(in))
+}
+
+func forceSetList(in List) error {
+	return db.ForceSetList(storedList(in))
+}
+
+func forceSetUser(in User) error {
+	return db.ForceSetUser(storedUser(in))
+}
+
+func UserByID(id int) (User, error) {
+	stored, err := db.UserByID(id)
+	i := restoreUser(stored)
+	return i, err
 }

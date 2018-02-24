@@ -61,7 +61,6 @@ func router() *chi.Mux {
 	r.Post("/gui/", guiAPI().ServeHTTP)
 	r.Get("/item/{id}", renderItemPage)
 	r.Get("/focus/", renderFocusPage)
-	r.Get("/debug", debugData)
 	r.Get("/", renderListPage)
 	return r
 }
@@ -107,19 +106,23 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderListPage(w http.ResponseWriter, r *http.Request) {
-	err := html.Render(pageBlock(displayListBlock(data.UserItemList(1, 1))), w)
+	list, err := data.UserItemList(1, 1)
+	if err != nil {
+		log.Println(err)
+	}
+	err = html.Render(pageBlock(displayListBlock(list)), w)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
 func renderFocusPage(w http.ResponseWriter, r *http.Request) {
-	err := html.Render(pageBlock(displayFocusBlock()), w)
+	focus, err := data.FocusList(1)
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func debugData(w http.ResponseWriter, r *http.Request) {
-	data.WriteDebugData(w)
+	err = html.Render(pageBlock(displayFocusBlock(focus)), w)
+	if err != nil {
+		log.Println(err)
+	}
 }
