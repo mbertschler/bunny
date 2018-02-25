@@ -185,7 +185,7 @@ func TestUserItemList(t *testing.T) {
 		sum += int(item.Focus)
 	}
 	if sum != 10 {
-		t.Error("expected focus sum to be 10")
+		t.Error("expected focus sum to be 10", sum)
 	}
 	_, err = UserItemList(2, 1)
 	if err == nil {
@@ -246,4 +246,37 @@ func TestSetFocus(t *testing.T) {
 	if err == nil {
 		t.Error("expected an error")
 	}
+}
+
+func TestSortItem(t *testing.T) {
+	list, err := ItemList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	should := []int{1, 2, 3, 5, 4}
+	ids := extractIDs(list)
+	if !reflect.DeepEqual(ids, should) {
+		t.Error("id order is wrong", ids)
+	}
+	err = SortItem(1, 3, 4)
+	if err != nil {
+		t.Error(err)
+	}
+	list, err = ItemList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	should = []int{1, 2, 4, 3, 5}
+	ids = extractIDs(list)
+	if !reflect.DeepEqual(ids, should) {
+		t.Error("id order is wrong", ids)
+	}
+}
+
+func extractIDs(list []Item) []int {
+	out := make([]int, len(list))
+	for i := range list {
+		out[i] = list[i].ID
+	}
+	return out
 }
