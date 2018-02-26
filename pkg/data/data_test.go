@@ -248,28 +248,71 @@ func TestSetFocus(t *testing.T) {
 	}
 }
 
+var sortSet = []struct {
+	Value  int
+	Pos    int
+	Output []int
+}{
+	{
+		Value:  2,
+		Pos:    1,
+		Output: []int{2, 1, 3, 4, 5},
+	}, {
+		Value:  3,
+		Pos:    4,
+		Output: []int{1, 2, 4, 3, 5},
+	},
+	{
+		Value:  1,
+		Pos:    2,
+		Output: []int{2, 1, 3, 4, 5},
+	},
+	{
+		Value:  3,
+		Pos:    1,
+		Output: []int{3, 1, 2, 4, 5},
+	},
+	{
+		Value:  2,
+		Pos:    4,
+		Output: []int{1, 3, 4, 2, 5},
+	},
+	{
+		Value:  1,
+		Pos:    5,
+		Output: []int{2, 3, 4, 5, 1},
+	},
+	{
+		Value:  5,
+		Pos:    1,
+		Output: []int{5, 1, 2, 3, 4},
+	},
+}
+
 func TestSortItem(t *testing.T) {
-	list, err := ItemList(1)
-	if err != nil {
-		t.Error(err)
-	}
-	should := []int{1, 2, 3, 5, 4}
-	ids := extractIDs(list)
-	if !reflect.DeepEqual(ids, should) {
-		t.Error("id order is wrong", ids)
-	}
-	err = SortItem(1, 3, 4)
-	if err != nil {
-		t.Error(err)
-	}
-	list, err = ItemList(1)
-	if err != nil {
-		t.Error(err)
-	}
-	should = []int{1, 2, 4, 3, 5}
-	ids = extractIDs(list)
-	if !reflect.DeepEqual(ids, should) {
-		t.Error("id order is wrong", ids)
+	for i, test := range sortSet {
+		resetDB()
+		list, err := ItemList(1)
+		if err != nil {
+			t.Error(err)
+		}
+		should := []int{1, 2, 3, 4, 5}
+		ids := extractIDs(list)
+		if !reflect.DeepEqual(ids, should) {
+			t.Error("pre id order is wrong", ids)
+		}
+		err = SetListItemPosition(1, test.Value, test.Pos)
+		if err != nil {
+			t.Error(err)
+		}
+		list, err = ItemList(1)
+		if err != nil {
+			t.Error(err)
+		}
+		ids = extractIDs(list)
+		if !reflect.DeepEqual(ids, test.Output) {
+			t.Error("id order is wrong", ids, i, test)
+		}
 	}
 }
 

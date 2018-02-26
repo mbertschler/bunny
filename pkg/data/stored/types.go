@@ -60,6 +60,7 @@ type User struct {
 }
 
 type ListItem struct {
+	ListID int
 	ItemID int
 }
 

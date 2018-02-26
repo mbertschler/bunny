@@ -90,14 +90,14 @@ func focusViewHandler(_ json.RawMessage) (*Result, error) {
 
 func listSortHandler(in json.RawMessage) (*Result, error) {
 	var args = struct {
-		Old int
-		New int
+		Item int
+		Pos  int
 	}{}
 	err := json.Unmarshal(in, &args)
 	if err != nil {
 		return nil, err
 	}
-	data.SortItem(1, args.Old, args.New)
+	data.SetListItemPosition(1, args.Item, args.Pos)
 	return listViewHandler(nil)
 }
 

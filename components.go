@@ -264,7 +264,7 @@ func listItemBlock(item data.Item) html.Block {
 		focusIcon = html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-left:10px"))
 	}
 
-	return html.Div(append(html.Class("item"),
+	return html.Div(append(html.Class("item").Data("item-id", item.ID),
 		html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", item.ID)}),
 		html.I(html.Class("large middle aligned icon "+iconClass)),
 		focusIcon,

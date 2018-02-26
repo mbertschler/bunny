@@ -67,11 +67,11 @@ func setupTestdata() {
 		ID: 1,
 	})
 
-	SortListItemAfter(1, 1, 0)
-	SortListItemAfter(1, 2, 1)
-	SortListItemAfter(1, 3, 2)
-	SortListItemAfter(1, 5, 3)
-	SortListItemAfter(1, 4, 5)
+	SetListItemPosition(1, 1, 1)
+	SetListItemPosition(1, 2, 2)
+	SetListItemPosition(1, 3, 3)
+	SetListItemPosition(1, 4, 4)
+	SetListItemPosition(1, 5, 5)
 
 	SetUserFocus(1, 1, FocusNow)
 	SetUserFocus(1, 5, FocusPause)
@@ -212,10 +212,6 @@ func NewItem() (Item, error) {
 	return i, err
 }
 
-func SortItem(listID, itemID, after int) error {
-	return db.SortListItemAfter(listID, itemID, after)
-}
-
 func SortFocusItem(user, id, after int) error {
 	return db.SortUserFocusAfter(user, id, after)
 }
@@ -274,8 +270,8 @@ func FocusList(user int) (FocusData, error) {
 	return out, nil
 }
 
-func SortListItemAfter(list, item, after int) error {
-	return db.SortListItemAfter(list, item, after)
+func SetListItemPosition(list, item, pos int) error {
+	return db.SetListItemPosition(list, item, pos)
 }
 
 func SetUserFocus(user, item int, focus FocusState) error {

@@ -56,7 +56,20 @@ func setupIndices(db *buntdb.DB) {
 		}
 		aStr := "/" + strconv.Itoa(focusA.UserID) + "/" + strconv.Itoa(focusA.ItemID) + "/"
 		bStr := "/" + strconv.Itoa(focusB.UserID) + "/" + strconv.Itoa(focusB.ItemID) + "/"
-		// fmt.Println("less:", a, b, aStr, bStr, aStr < bStr)
+		return aStr < bStr
+	})
+	db.CreateIndex("listItem", itemListPrefix+"*", func(a, b string) bool {
+		var liA, liB stored.ListItem
+		err := decode(a, &liA)
+		if err != nil {
+			log.Println(err)
+		}
+		err = decode(b, &liB)
+		if err != nil {
+			log.Println(err)
+		}
+		aStr := "/" + strconv.Itoa(liA.ListID) + "/" + strconv.Itoa(liA.ItemID) + "/"
+		bStr := "/" + strconv.Itoa(liB.ListID) + "/" + strconv.Itoa(liB.ItemID) + "/"
 		return aStr < bStr
 	})
 }
@@ -95,7 +108,7 @@ func listID(id string) int {
 	return i
 }
 
-func itemListkey(listID, order int) string {
+func listItemKey(listID, order int) string {
 	return itemListPrefix + strconv.Itoa(listID) +
 		"/" + strconv.Itoa(order)
 }
@@ -376,15 +389,74 @@ func (d *DB) NewItem(i stored.Item) (int, error) {
 	return id, err
 }
 
-func (d *DB) SortListItemAfter(listID, itemID, after int) error {
+func (d *DB) SetListItemPosition(list, item, pos int) error {
 	return d.db.Update(func(tx *buntdb.Tx) error {
-		key := itemListkey(listID, after+1)
-		current, err := tx.Get(key)
-		if err == nil {
-			log.Println("found", current)
+		li := stored.ListItem{
+			ListID: list, ItemID: item}
+		start, err := encode(li)
+		if err != nil {
+			return err
 		}
-		var li stored.ListItem
-		li.ItemID = itemID
+		li = stored.ListItem{
+			ListID: list, ItemID: item + 1}
+		end, err := encode(li)
+		if err != nil {
+			return err
+		}
+		var found bool
+		var oldKey string
+		err = tx.AscendRange("listItem", start, end, func(key, val string) bool {
+			oldKey = key
+			found = true
+			return false
+		})
+		var oldPos int
+		if found {
+			_, oldPos = listItemID(oldKey)
+		}
+		if pos == oldPos {
+			return nil
+		}
+		type change struct {
+			key string
+			val string
+		}
+		if oldPos != 0 {
+			if pos < oldPos {
+				changed := []change{}
+				err = tx.DescendRange("", listItemKey(list, oldPos-1),
+					listItemKey(list, pos-1), func(key, val string) bool {
+						list, order := listItemID(key)
+						key = listItemKey(list, order+1)
+						changed = append(changed, change{key, val})
+						return true
+					})
+				for _, e := range changed {
+					_, _, err = tx.Set(e.key, e.val, nil)
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				changed := []change{}
+				err = tx.AscendRange("", listItemKey(list, oldPos+1),
+					listItemKey(list, pos+1), func(key, val string) bool {
+						list, order := listItemID(key)
+						key = listItemKey(list, order-1)
+						changed = append(changed, change{key, val})
+						return true
+					})
+				for _, e := range changed {
+					_, _, err = tx.Set(e.key, e.val, nil)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+		key := listItemKey(list, pos)
+		li = stored.ListItem{
+			ListID: list, ItemID: item}
 		val, err := encode(li)
 		if err != nil {
 			return err
