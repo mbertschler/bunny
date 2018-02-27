@@ -95,7 +95,7 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	item, err := data.ItemByID(id)
+	item, err := data.UserItemByID(1, id)
 	if err != nil {
 		log.Println(err)
 	}

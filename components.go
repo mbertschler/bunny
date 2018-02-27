@@ -24,8 +24,7 @@ import (
 var (
 	focusNowIcon   = "yellow star"
 	focusLaterIcon = "red wait"
-	// focusPauseIcon = "orange pause circle outline"
-	focusPauseIcon = "orange star"
+	focusPauseIcon = "orange pause circle outline"
 	focusWatchIcon = "blue unhide"
 )
 

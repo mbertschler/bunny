@@ -172,7 +172,15 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if arg.New {
+		if len(arg.Title) == 0 {
+			list, err := data.UserItemList(1, 1)
+			if err != nil {
+				return nil, err
+			}
+			return replaceContainer(displayListBlock(list))
+		}
 		newItem, err := data.NewItem()
 		if err != nil {
 			return nil, err
@@ -221,8 +229,29 @@ func itemFocusHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	data.SetFocus(1, args.ID, 1)
+
 	d, _ := data.UserItemByID(1, args.ID)
+	switch args.Focus {
+	case "later":
+		if d.Focus == data.FocusLater {
+			data.SetFocus(1, args.ID, data.FocusNone)
+		} else {
+			data.SetFocus(1, args.ID, data.FocusLater)
+		}
+	case "focus":
+		if d.Focus == data.FocusNow {
+			data.SetFocus(1, args.ID, data.FocusNone)
+		} else {
+			data.SetFocus(1, args.ID, data.FocusNow)
+		}
+	case "watch":
+		if d.Focus == data.FocusWatch {
+			data.SetFocus(1, args.ID, data.FocusNone)
+		} else {
+			data.SetFocus(1, args.ID, data.FocusWatch)
+		}
+	}
+	d, _ = data.UserItemByID(1, args.ID)
 	return replaceContainer(displayItemBlock(d))
 }
 
