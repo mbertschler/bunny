@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mbertschler/bunny/pkg/data/stored"
+
 	"github.com/mbertschler/bunny/pkg/data/memory"
 )
 
@@ -313,9 +315,12 @@ func TestSortItem(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		list, err := ItemList(1)
+		list, err := debugItemList(1)
 		if err != nil {
 			t.Error(err)
+		}
+		if !isConsistent(list) {
+			t.Error("inconsistent", list)
 		}
 		should := []int{1, 2, 3, 4, 5}
 		ids := extractIDs(list)
@@ -326,9 +331,12 @@ func TestSortItem(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		list, err = ItemList(1)
+		list, err = debugItemList(1)
 		if err != nil {
 			t.Error(err)
+		}
+		if !isConsistent(list) {
+			t.Error("inconsistent", list)
 		}
 		ids = extractIDs(list)
 		if !reflect.DeepEqual(ids, test.Output) {
@@ -337,10 +345,21 @@ func TestSortItem(t *testing.T) {
 	}
 }
 
-func extractIDs(list []Item) []int {
+func extractIDs(list []stored.OrderedListItem) []int {
 	out := make([]int, len(list))
 	for i := range list {
-		out[i] = list[i].ID
+		out[i] = list[i].ItemID
 	}
 	return out
+}
+
+func isConsistent(list []stored.OrderedListItem) bool {
+	j := 1
+	for _, i := range list {
+		if i.Position != j {
+			return false
+		}
+		j++
+	}
+	return true
 }

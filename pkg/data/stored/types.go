@@ -64,6 +64,11 @@ type ListItem struct {
 	ItemID int
 }
 
+type OrderedListItem struct {
+	Position int
+	ListItem
+}
+
 type UserFocus struct {
 	UserID int
 	ItemID int

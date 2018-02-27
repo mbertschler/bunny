@@ -300,6 +300,10 @@ func forceSetUser(in User) error {
 	return db.ForceSetUser(storedUser(in))
 }
 
+func debugItemList(list int) ([]stored.OrderedListItem, error) {
+	return db.DebugItemList(list)
+}
+
 func UserByID(id int) (User, error) {
 	stored, err := db.UserByID(id)
 	i := restoreUser(stored)
