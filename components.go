@@ -24,7 +24,6 @@ import (
 var (
 	focusNowIcon   = "yellow star"
 	focusLaterIcon = "red wait"
-	focusPauseIcon = "orange pause circle outline"
 	focusWatchIcon = "blue unhide"
 )
 
@@ -149,9 +148,6 @@ func displayItemBlock(d data.Item) html.Block {
 	switch d.Focus {
 	case data.FocusLater:
 		laterClass = " red"
-	case data.FocusPause:
-		focusClass = " orange"
-		focusIcon = "pause circle outline"
 	case data.FocusNow:
 		focusClass = " yellow"
 	case data.FocusWatch:
@@ -263,8 +259,6 @@ func listItemBlock(item data.Item) html.Block {
 	switch item.Focus {
 	case data.FocusLater:
 		focusIcon = html.I(html.Class("large middle aligned icon " + focusLaterIcon).Styles("padding-left:10px"))
-	case data.FocusPause:
-		focusIcon = html.I(html.Class("large middle aligned icon " + focusPauseIcon).Styles("padding-left:10px"))
 	case data.FocusNow:
 		focusIcon = html.I(html.Class("large middle aligned icon " + focusNowIcon).Styles("padding-left:10px"))
 	case data.FocusWatch:
@@ -290,16 +284,6 @@ func displayFocusBlock(focus data.FocusData) html.Block {
 		))
 		focus.Focus.Focus = data.FocusNone
 		list.Add(listItemBlock(*focus.Focus))
-	}
-	if len(focus.Pause) > 0 {
-		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
-			html.I(html.Class("large middle aligned icon "+focusPauseIcon).Styles("padding-right:12px")),
-			html.Text("Paused"),
-		))
-	}
-	for _, item := range focus.Pause {
-		item.Focus = data.FocusNone
-		list.Add(listItemBlock(item))
 	}
 	if len(focus.Later) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),

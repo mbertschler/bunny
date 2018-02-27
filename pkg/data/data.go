@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate stringer -type=ItemState,FocusState
+//go:generate stringer -type=ItemState,FocusState -output=states_string.go
 
 package data
 
@@ -74,7 +74,6 @@ func setupTestdata() {
 	SetListItemPosition(1, 5, 5)
 
 	SetUserFocus(1, 1, FocusNow)
-	SetUserFocus(1, 5, FocusPause)
 	SetUserFocus(1, 2, FocusLater)
 	SetUserFocus(1, 3, FocusWatch)
 }
@@ -129,7 +128,6 @@ type FocusState int8
 const (
 	FocusNone FocusState = iota
 	FocusNow
-	FocusPause
 	FocusLater
 	FocusWatch
 )
@@ -263,8 +261,6 @@ func FocusList(user int) (FocusData, error) {
 		case FocusNow:
 			item := restoreItem(i)
 			out.Focus = &item
-		case FocusPause:
-			out.Pause = append(out.Pause, restoreItem(i))
 		case FocusLater:
 			out.Later = append(out.Later, restoreItem(i))
 		case FocusWatch:

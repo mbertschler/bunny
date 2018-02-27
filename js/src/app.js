@@ -15,7 +15,7 @@ enableSorting()
 
 function enableSorting() {
 	activateList("item-list", sortUpdate)
-	activateList("focus-pause-list", sortFocusUpdate)
+	// activateList("focus-pause-list", sortFocusUpdate)
 }
 
 function activateList(id, cb) {

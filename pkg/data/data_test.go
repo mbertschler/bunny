@@ -186,8 +186,8 @@ func TestUserItemList(t *testing.T) {
 	for _, item := range list {
 		sum += int(item.Focus)
 	}
-	if sum != 10 {
-		t.Error("expected focus sum to be 10", sum)
+	if sum != 6 {
+		t.Error("expected focus sum to be 6", sum)
 	}
 	_, err = UserItemList(2, 1)
 	if err == nil {
