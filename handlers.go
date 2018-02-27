@@ -43,7 +43,11 @@ func guiAPI() Handler {
 }
 
 func listViewHandler(_ json.RawMessage) (*Result, error) {
-	res, err := replaceContainer(displayListBlock(data.UserItemList(1, 1)))
+	list, err := data.UserItemList(1, 1)
+	if err != nil {
+		return nil, err
+	}
+	res, err := replaceContainer(displayListBlock(list))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
 		if err != nil {
@@ -62,7 +66,11 @@ func listViewHandler(_ json.RawMessage) (*Result, error) {
 }
 
 func focusViewHandler(_ json.RawMessage) (*Result, error) {
-	res, err := replaceContainer(displayFocusBlock())
+	focus, err := data.FocusList(1)
+	if err != nil {
+		log.Println(err)
+	}
+	res, err := replaceContainer(displayFocusBlock(focus))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny Focus", "/focus/"})
 		if err != nil {
@@ -82,14 +90,14 @@ func focusViewHandler(_ json.RawMessage) (*Result, error) {
 
 func listSortHandler(in json.RawMessage) (*Result, error) {
 	var args = struct {
-		Old int
-		New int
+		Item int
+		Pos  int
 	}{}
 	err := json.Unmarshal(in, &args)
 	if err != nil {
 		return nil, err
 	}
-	data.SortItem(1, args.Old, args.New)
+	data.SetListItemPosition(1, args.Item, args.Pos)
 	return listViewHandler(nil)
 }
 
@@ -164,7 +172,15 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if arg.New {
+		if len(arg.Title) == 0 {
+			list, err := data.UserItemList(1, 1)
+			if err != nil {
+				return nil, err
+			}
+			return replaceContainer(displayListBlock(list))
+		}
 		newItem, err := data.NewItem()
 		if err != nil {
 			return nil, err
@@ -213,8 +229,29 @@ func itemFocusHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	data.SetFocus(1, args.ID, 1)
+
 	d, _ := data.UserItemByID(1, args.ID)
+	switch args.Focus {
+	case "later":
+		if d.Focus == data.FocusLater {
+			data.SetFocus(1, args.ID, data.FocusNone)
+		} else {
+			data.SetFocus(1, args.ID, data.FocusLater)
+		}
+	case "focus":
+		if d.Focus == data.FocusNow {
+			data.SetFocus(1, args.ID, data.FocusNone)
+		} else {
+			data.SetFocus(1, args.ID, data.FocusNow)
+		}
+	case "watch":
+		if d.Focus == data.FocusWatch {
+			data.SetFocus(1, args.ID, data.FocusNone)
+		} else {
+			data.SetFocus(1, args.ID, data.FocusWatch)
+		}
+	}
+	d, _ = data.UserItemByID(1, args.ID)
 	return replaceContainer(displayItemBlock(d))
 }
 
@@ -225,7 +262,11 @@ func itemDeleteHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	data.DeleteItem(arg)
-	return replaceContainer(displayListBlock(data.ItemList(1)))
+	list, err := data.ItemList(1)
+	if err != nil {
+		return nil, err
+	}
+	return replaceContainer(displayListBlock(list))
 }
 
 func replaceContainer(block html.Block) (*Result, error) {

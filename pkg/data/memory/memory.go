@@ -25,10 +25,11 @@ import (
 )
 
 const (
-	itemPrefix      = "i/"
-	listPrefix      = "l/"
-	listItemPrefix  = "li/"
-	userFocusPrefix = "uf/"
+	itemPrefix     = "i/"
+	listPrefix     = "l/"
+	userPrefix     = "u/"
+	itemListPrefix = "il/"
+	focusPrefix    = "f/"
 )
 
 func Open() *DB {
@@ -43,7 +44,34 @@ func Open() *DB {
 }
 
 func setupIndices(db *buntdb.DB) {
-
+	db.CreateIndex("userFocus", focusPrefix+"*", func(a, b string) bool {
+		var focusA, focusB stored.UserFocus
+		err := decode(a, &focusA)
+		if err != nil {
+			log.Println(err)
+		}
+		err = decode(b, &focusB)
+		if err != nil {
+			log.Println(err)
+		}
+		aStr := "/" + strconv.Itoa(focusA.UserID) + "/" + strconv.Itoa(focusA.ItemID) + "/"
+		bStr := "/" + strconv.Itoa(focusB.UserID) + "/" + strconv.Itoa(focusB.ItemID) + "/"
+		return aStr < bStr
+	})
+	db.CreateIndex("listItem", itemListPrefix+"*", func(a, b string) bool {
+		var liA, liB stored.ListItem
+		err := decode(a, &liA)
+		if err != nil {
+			log.Println(err)
+		}
+		err = decode(b, &liB)
+		if err != nil {
+			log.Println(err)
+		}
+		aStr := "/" + strconv.Itoa(liA.ListID) + "/" + strconv.Itoa(liA.ItemID) + "/"
+		bStr := "/" + strconv.Itoa(liB.ListID) + "/" + strconv.Itoa(liB.ItemID) + "/"
+		return aStr < bStr
+	})
 }
 
 type DB struct {
@@ -60,6 +88,16 @@ func itemID(id string) int {
 	return i
 }
 
+func userKey(id int) string {
+	return userPrefix + strconv.Itoa(id)
+}
+
+func userID(id string) int {
+	id = strings.TrimPrefix(id, userPrefix)
+	i, _ := strconv.Atoi(id)
+	return i
+}
+
 func listKey(id int) string {
 	return listPrefix + strconv.Itoa(id)
 }
@@ -70,29 +108,30 @@ func listID(id string) int {
 	return i
 }
 
-func listItemKey(listID, itemID int) string {
-	return listItemPrefix + strconv.Itoa(listID) +
-		"/" + strconv.Itoa(itemID)
+func listItemKey(list, pos int) string {
+	return itemListPrefix + strconv.Itoa(list) +
+		"/" + strconv.Itoa(pos)
 }
 
-func listItemID(id string) (listID, itemID int) {
-	id = strings.TrimPrefix(id, listItemPrefix)
+func listItemID(id string) (list, pos int) {
+	id = strings.TrimPrefix(id, itemListPrefix)
 	parts := strings.Split(id, "/")
-	listID, _ = strconv.Atoi(parts[0])
-	itemID, _ = strconv.Atoi(parts[1])
+	list, _ = strconv.Atoi(parts[0])
+	pos, _ = strconv.Atoi(parts[1])
 	return
 }
 
-func userFocusKey(user, item int) string {
-	return userFocusPrefix + strconv.Itoa(user) +
-		"/" + strconv.Itoa(item)
+func focusKey(user, focus, order int) string {
+	return focusPrefix + strconv.Itoa(user) +
+		"/" + strconv.Itoa(focus) + "/" + strconv.Itoa(order)
 }
 
-func userFocusIDs(id string) (user, item int) {
-	id = strings.TrimPrefix(id, userFocusPrefix)
+func focusIDs(id string) (user, focus, order int) {
+	id = strings.TrimPrefix(id, focusPrefix)
 	parts := strings.Split(id, "/")
 	user, _ = strconv.Atoi(parts[0])
-	item, _ = strconv.Atoi(parts[1])
+	focus, _ = strconv.Atoi(parts[1])
+	order, _ = strconv.Atoi(parts[2])
 	return
 }
 
@@ -111,6 +150,21 @@ func (d *DB) ItemByID(id int) (stored.Item, error) {
 	return item, err
 }
 
+func (d *DB) UserByID(id int) (stored.User, error) {
+	var val string
+	var err error
+	err = d.db.View(func(tx *buntdb.Tx) error {
+		val, err = tx.Get(userKey(id))
+		return err
+	})
+	var user stored.User
+	if err != nil {
+		return user, err
+	}
+	err = decode(val, &user)
+	return user, err
+}
+
 func (d *DB) UserItemByID(user, id int) (stored.Item, error) {
 	var item stored.Item
 	err := d.db.View(func(tx *buntdb.Tx) error {
@@ -122,84 +176,179 @@ func (d *DB) UserItemByID(user, id int) (stored.Item, error) {
 		if err != nil {
 			return err
 		}
-		focusStr, err := tx.Get(userFocusKey(user, id))
-		if err == nil {
-			var focus stored.UserFocus
-			err = decode(focusStr, &focus)
-			if err != nil {
-				return err
-			}
-			item.Focus = focus.Focus
+		uf := stored.UserFocus{
+			UserID: user, ItemID: id}
+		start, err := encode(uf)
+		if err != nil {
+			return err
 		}
-		return err
+		uf = stored.UserFocus{
+			UserID: user, ItemID: id + 1}
+		end, err := encode(uf)
+		if err != nil {
+			return err
+		}
+		return tx.AscendRange("userFocus", start, end, func(key, val string) bool {
+			_, item.Focus, _ = focusIDs(key)
+			return false
+		})
 	})
 	return item, err
 }
 
-func (d *DB) ItemList(id int) []stored.Item {
-	var items []stored.Item
+func (d *DB) DebugItemList(id int) ([]stored.OrderedListItem, error) {
+	var items []stored.OrderedListItem
+	var list stored.List
 	err := d.db.View(func(tx *buntdb.Tx) error {
-		return tx.AscendKeys(itemPrefix+"*", func(key, val string) bool {
-			var item stored.Item
-			decode(val, &item)
-			items = append(items, item)
-			return true
-		})
-	})
-	if err != nil {
-		log.Println(err)
-	}
-	return items
-}
-
-func (d *DB) UserItemList(user, id int) []stored.Item {
-	var items []stored.Item
-	err := d.db.View(func(tx *buntdb.Tx) error {
-		return tx.AscendKeys(itemPrefix+"*", func(key, val string) bool {
-			var item stored.Item
-			decode(val, &item)
-			uf, err := tx.Get(userFocusKey(user, item.ID))
-			if err == nil {
-				var focus stored.UserFocus
-				decode(uf, &focus)
-				item.Focus = focus.Focus
-			}
-			items = append(items, item)
-			return true
-		})
-	})
-	if err != nil {
-		log.Println(err)
-	}
-	return items
-}
-
-func (d *DB) FocusList(user int) []stored.Item {
-	var items []stored.Item
-	err := d.db.View(func(tx *buntdb.Tx) error {
-		return tx.AscendKeys(userFocusPrefix+"*", func(key, val string) bool {
-			_, itemID := userFocusIDs(key)
-			var focus stored.UserFocus
-			decode(val, &focus)
-			itemStr, err := tx.Get(itemKey(itemID))
-			if err != nil {
-				log.Println("wtf items are inconsistent", itemID)
+		val, err := tx.Get(listKey(id))
+		if err != nil {
+			return err
+		}
+		decode(val, &list)
+		var outerErr error
+		err = tx.AscendRange("", itemListPrefix+strconv.Itoa(id),
+			itemListPrefix+strconv.Itoa(id+1), func(key, val string) bool {
+				var listItem stored.ListItem
+				outerErr = decode(val, &listItem)
+				if outerErr != nil {
+					return false
+				}
+				_, err := d.ItemByID(listItem.ItemID)
+				if err != nil {
+					outerErr = err
+					return false
+				}
+				_, pos := listItemID(key)
+				items = append(items, stored.OrderedListItem{
+					ListItem: listItem, Position: pos})
 				return true
-			}
-			var item stored.Item
-			decode(itemStr, &item)
-			item.Focus = focus.Focus
-			items = append(items, item)
-			return true
-		})
+			})
+		if err != nil {
+			return err
+		}
+		return outerErr
 	})
-	if err != nil {
-		log.Println(err)
-	}
-	return items
+	return items, err
+}
+
+func (d *DB) ItemList(id int) (stored.List, []stored.Item, error) {
+	var items []stored.Item
+	var list stored.List
+	err := d.db.View(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(listKey(id))
+		if err != nil {
+			return err
+		}
+		decode(val, &list)
+		var outerErr error
+		err = tx.AscendRange("", itemListPrefix+strconv.Itoa(id),
+			itemListPrefix+strconv.Itoa(id+1), func(key, val string) bool {
+				var listItem stored.ListItem
+				outerErr = decode(val, &listItem)
+				if outerErr != nil {
+					return false
+				}
+				item, err := d.ItemByID(listItem.ItemID)
+				if err != nil {
+					outerErr = err
+					return false
+				}
+				items = append(items, item)
+				return true
+			})
+		if err != nil {
+			return err
+		}
+		return outerErr
+	})
+	return list, items, err
+}
+
+func (d *DB) UserItemList(user, id int) (stored.List, []stored.Item, error) {
+	var items []stored.Item
+	var list stored.List
+	err := d.db.View(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(listKey(id))
+		if err != nil {
+			return err
+		}
+		err = decode(val, &list)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Get(userKey(user))
+		if err != nil {
+			return err
+		}
+		var outerErr error
+		err = tx.AscendRange("", itemListPrefix+strconv.Itoa(id),
+			itemListPrefix+strconv.Itoa(id+1), func(key, val string) bool {
+				var listItem stored.ListItem
+				err := decode(val, &listItem)
+				if err != nil {
+					outerErr = err
+					return false
+				}
+				item, err := d.UserItemByID(user, listItem.ItemID)
+				if err != nil {
+					outerErr = err
+					return false
+				}
+				items = append(items, item)
+				return true
+			})
+		if err != nil {
+			return err
+		}
+		return outerErr
+	})
+	return list, items, err
+}
+
+func (d *DB) FocusList(user int) ([]stored.Item, error) {
+	var items []stored.Item
+	err := d.db.View(func(tx *buntdb.Tx) error {
+		_, err := tx.Get(userKey(user))
+		if err != nil {
+			return err
+		}
+		return tx.AscendRange("", focusPrefix+strconv.Itoa(user),
+			focusPrefix+strconv.Itoa(user+1), func(key, val string) bool {
+				_, focus, _ := focusIDs(key)
+				var uf stored.UserFocus
+				decode(val, &uf)
+				itemStr, err := tx.Get(itemKey(uf.ItemID))
+				if err != nil {
+					log.Println("wtf items are inconsistent", uf.ItemID)
+					return true
+				}
+				var item stored.Item
+				decode(itemStr, &item)
+				item.Focus = focus
+				items = append(items, item)
+				return true
+			})
+	})
+	return items, err
 }
 
 func (d *DB) SetItem(i stored.Item) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		val, err := encode(i)
+		if err != nil {
+			return err
+		}
+		key := itemKey(i.ID)
+		_, err = tx.Get(key)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(key, val, nil)
+		return err
+	})
+}
+
+func (d *DB) ForceSetItem(i stored.Item) error {
 	return d.db.Update(func(tx *buntdb.Tx) error {
 		val, err := encode(i)
 		if err != nil {
@@ -212,7 +361,22 @@ func (d *DB) SetItem(i stored.Item) error {
 
 func (d *DB) SetList(l stored.List) error {
 	return d.db.Update(func(tx *buntdb.Tx) error {
-		return nil
+		val, err := encode(l)
+		if err != nil {
+			return err
+		}
+		key := listKey(l.ID)
+		_, err = tx.Get(key)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(key, val, nil)
+		return err
+	})
+}
+
+func (d *DB) ForceSetList(l stored.List) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
 		val, err := encode(l)
 		if err != nil {
 			return err
@@ -241,7 +405,7 @@ func (d *DB) DeleteItem(id int) error {
 func (d *DB) NewItem(i stored.Item) (int, error) {
 	var id int
 	err := d.db.Update(func(tx *buntdb.Tx) error {
-		err := tx.DescendKeys(itemPrefix, func(key, value string) bool {
+		err := tx.DescendKeys(itemPrefix+"*", func(key, value string) bool {
 			id = itemID(key)
 			return false
 		})
@@ -260,34 +424,112 @@ func (d *DB) NewItem(i stored.Item) (int, error) {
 	return id, err
 }
 
-func (d *DB) SortListItemAfter(listID, itemID, after int) {
-	// var nextID int
-	// d.db.Update(func(tx *buntdb.Tx) error {
-	// 	afterKey := listItemKey(listID, after)
-	// 	val, err := tx.Get(afterKey)
-	// 	if err == nil {
-	// 		var li stored.ListItem
-	// 		decode(val, &li)
-	// 		nextID = li.Next
-	// 		li.Next = itemID
-	// 		tx.Set(afterKey, encode(li), nil)
-	// 	} else {
-	// 		log.Println(err)
-	// 	}
-
-	// 	tx.DescendKeys(itemPrefix, func(key, value string) bool {
-	// 		id = itemID(key)
-	// 		return false
-	// 	})
-	// 	id++
-	// 	i.ID = id
-	// 	tx.Set(itemKey(i.ID), encode(i), nil)
-	// 	return nil
-	// })
-	// return id
+func posByItemID(tx *buntdb.Tx, list, item int) (int, bool, error) {
+	li := stored.ListItem{
+		ListID: list, ItemID: item}
+	start, err := encode(li)
+	if err != nil {
+		return 0, false, err
+	}
+	li = stored.ListItem{
+		ListID: list, ItemID: item + 1}
+	end, err := encode(li)
+	if err != nil {
+		return 0, false, err
+	}
+	var found bool
+	var oldKey string
+	err = tx.AscendRange("listItem", start, end, func(key, val string) bool {
+		oldKey = key
+		found = true
+		return false
+	})
+	var oldPos int
+	if found {
+		_, oldPos = listItemID(oldKey)
+	}
+	return oldPos, found, nil
 }
 
-func (d *DB) SortUserFocusAfter(user, id, after int) {
+func (d *DB) SetListItemPosition(list, item, pos int) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		oldPos, found, err := posByItemID(tx, list, item)
+		if err != nil {
+			return err
+		}
+		if found && pos == oldPos {
+			return nil
+		}
+		type change struct {
+			key string
+			val string
+		}
+
+		var posExists bool
+		_, err = tx.Get(listItemKey(list, pos))
+		if err == nil {
+			posExists = true
+		}
+
+		if !found {
+			err = tx.DescendRange("", listItemKey(list+1, 0),
+				listItemKey(list, 0), func(key, val string) bool {
+					_, oldPos = listItemID(key)
+					oldPos++
+					return false
+				})
+			if err != nil {
+				return err
+			}
+		}
+
+		if posExists {
+			if pos < oldPos {
+				changed := []change{}
+				err = tx.DescendRange("", listItemKey(list, oldPos-1),
+					listItemKey(list, pos-1), func(key, val string) bool {
+						list, order := listItemID(key)
+						key = listItemKey(list, order+1)
+						changed = append(changed, change{key, val})
+						return true
+					})
+				for _, e := range changed {
+					_, _, err = tx.Set(e.key, e.val, nil)
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				changed := []change{}
+				err = tx.AscendRange("", listItemKey(list, oldPos+1),
+					listItemKey(list, pos+1), func(key, val string) bool {
+						list, order := listItemID(key)
+						key = listItemKey(list, order-1)
+						changed = append(changed, change{key, val})
+						return true
+					})
+				for _, e := range changed {
+					_, _, err = tx.Set(e.key, e.val, nil)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		key := listItemKey(list, pos)
+		li := stored.ListItem{
+			ListID: list, ItemID: item}
+		val, err := encode(li)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(key, val, nil)
+		return err
+	})
+}
+
+func (d *DB) SortUserFocusAfter(user, id, after int) error {
 	// var id int
 	// d.db.Update(func(tx *buntdb.Tx) error {
 	// 	tx.DescendKeys(itemPrefix, func(key, value string) bool {
@@ -300,20 +542,82 @@ func (d *DB) SortUserFocusAfter(user, id, after int) {
 	// 	return nil
 	// })
 	// return id
+	return nil
 }
 
 func (d *DB) SetUserFocus(user, item, focus int) error {
+	_, err := d.UserByID(user)
+	if err != nil {
+		return err
+	}
+	_, err = d.ItemByID(item)
+	if err != nil {
+		return err
+	}
 	var uf = stored.UserFocus{
-		Focus: focus,
+		UserID: user,
+		ItemID: item,
+	}
+	val, err := encode(uf)
+	if err != nil {
+		return err
 	}
 	return d.db.Update(func(tx *buntdb.Tx) error {
-		val, err := encode(uf)
+		uf := stored.UserFocus{
+			UserID: user, ItemID: item}
+		start, err := encode(uf)
 		if err != nil {
 			return err
 		}
-		_, _, err = tx.Set(userFocusKey(user, item), val, nil)
+		uf = stored.UserFocus{
+			UserID: user, ItemID: item + 1}
+		end, err := encode(uf)
+		if err != nil {
+			return err
+		}
+		var found bool
+		var oldKey string
+		err = tx.AscendRange("userFocus", start, end, func(key, val string) bool {
+			found = true
+			oldKey = key
+			return false
+		})
+
+		if found {
+			_, err = tx.Delete(oldKey)
+			if err != nil {
+				return err
+			}
+		}
+		var order int
+		err = tx.DescendRange("", focusKey(user, focus+1, 0),
+			focusKey(user, focus, 0), func(key, val string) bool {
+				_, _, order = focusIDs(key)
+				return false
+			})
+		if err != nil {
+			return err
+		}
+		order++
+		_, _, err = tx.Set(focusKey(user, focus, order), val, nil)
+
 		return err
 	})
+}
+
+func (d *DB) ListByID(id int) (stored.List, error) {
+	var val string
+	var err error
+	err = d.db.View(func(tx *buntdb.Tx) error {
+		val, err = tx.Get(listKey(id))
+		return err
+	})
+	var list stored.List
+	if err != nil {
+		return list, err
+	}
+	err = decode(val, &list)
+	return list, err
 }
 
 func encode(in interface{}) (string, error) {
@@ -330,4 +634,15 @@ func decode(in string, dest interface{}) error {
 		return stored.WithCause(err, stored.CauseMalformed)
 	}
 	return nil
+}
+
+func (d *DB) ForceSetUser(u stored.User) error {
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		val, err := encode(u)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(userKey(u.ID), val, nil)
+		return err
+	})
 }

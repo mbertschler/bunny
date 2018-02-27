@@ -21,6 +21,13 @@ import (
 	"github.com/mbertschler/bunny/pkg/data"
 )
 
+var (
+	focusNowIcon   = "yellow star"
+	focusLaterIcon = "red wait"
+	focusPauseIcon = "orange pause circle outline"
+	focusWatchIcon = "blue unhide"
+)
+
 func pageBlock(content html.Block) html.Block {
 	return html.Blocks{
 		html.Doctype("html"),
@@ -93,7 +100,7 @@ func menuBlock() html.Block {
 			html.Text("Updates")),
 		html.A(append(html.Class("item"),
 			html.AttrPair{Key: "onclick", Value: "focusView()"}),
-			html.I(html.Class("star yellow icon")),
+			html.I(html.Class(focusNowIcon+" icon")),
 			html.Text("Focus")),
 		html.A(append(html.Class("item"),
 			html.AttrPair{Key: "onclick", Value: "listView()"}),
@@ -119,7 +126,7 @@ func displayItemBlock(d data.Item) html.Block {
 		)
 	case data.ItemArchived:
 		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
-		archiveButton = html.Button(append(html.Class("ui right floated  button"),
+		archiveButton = html.Button(append(html.Class("ui right floated button"),
 			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", d.ID)}),
 			html.Text("Unarchive item"),
 		)
@@ -255,16 +262,16 @@ func listItemBlock(item data.Item) html.Block {
 	var focusIcon html.Block
 	switch item.Focus {
 	case data.FocusLater:
-		focusIcon = html.I(html.Class("large middle aligned icon red wait").Styles("padding-left:10px"))
+		focusIcon = html.I(html.Class("large middle aligned icon " + focusLaterIcon).Styles("padding-left:10px"))
 	case data.FocusPause:
-		focusIcon = html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-left:10px"))
+		focusIcon = html.I(html.Class("large middle aligned icon " + focusPauseIcon).Styles("padding-left:10px"))
 	case data.FocusNow:
-		focusIcon = html.I(html.Class("large middle aligned icon yellow star").Styles("padding-left:10px"))
+		focusIcon = html.I(html.Class("large middle aligned icon " + focusNowIcon).Styles("padding-left:10px"))
 	case data.FocusWatch:
-		focusIcon = html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-left:10px"))
+		focusIcon = html.I(html.Class("large middle aligned icon " + focusWatchIcon).Styles("padding-left:10px"))
 	}
 
-	return html.Div(append(html.Class("item"),
+	return html.Div(append(html.Class("item").Data("item-id", item.ID),
 		html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemView(%d)", item.ID)}),
 		html.I(html.Class("large middle aligned icon "+iconClass)),
 		focusIcon,
@@ -274,41 +281,44 @@ func listItemBlock(item data.Item) html.Block {
 	)
 }
 
-func displayFocusBlock() html.Block {
-	focus := data.FocusList()
+func displayFocusBlock(focus data.FocusData) html.Block {
 	var list html.Blocks
 	if focus.Focus != nil {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
-			html.I(html.Class("large middle aligned icon yellow star").Styles("padding-right:12px")),
+			html.I(html.Class("large middle aligned icon "+focusNowIcon).Styles("padding-right:12px")),
 			html.Text("Focus"),
 		))
+		focus.Focus.Focus = data.FocusNone
 		list.Add(listItemBlock(*focus.Focus))
 	}
 	if len(focus.Pause) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
-			html.I(html.Class("large middle aligned icon orange pause circle outline").Styles("padding-right:12px")),
+			html.I(html.Class("large middle aligned icon "+focusPauseIcon).Styles("padding-right:12px")),
 			html.Text("Paused"),
 		))
 	}
 	for _, item := range focus.Pause {
+		item.Focus = data.FocusNone
 		list.Add(listItemBlock(item))
 	}
 	if len(focus.Later) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
-			html.I(html.Class("large middle aligned icon red wait").Styles("padding-right:12px")),
+			html.I(html.Class("large middle aligned icon "+focusLaterIcon).Styles("padding-right:12px")),
 			html.Text("Later"),
 		))
 	}
 	for _, item := range focus.Later {
+		item.Focus = data.FocusNone
 		list.Add(listItemBlock(item))
 	}
 	if len(focus.Watch) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
-			html.I(html.Class("large middle aligned icon blue unhide").Styles("padding-right:12px")),
+			html.I(html.Class("large middle aligned icon "+focusWatchIcon).Styles("padding-right:12px")),
 			html.Text("Watched"),
 		))
 	}
 	for _, item := range focus.Watch {
+		item.Focus = data.FocusNone
 		list.Add(listItemBlock(item))
 	}
 	return html.Div(html.Class("ui text container"),

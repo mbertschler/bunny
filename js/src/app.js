@@ -31,8 +31,8 @@ function activateList(id, cb) {
 
 function sortUpdate(event) {
 	callGuiAPI("listSort",{
-		Old: event.oldIndex,
-		New: event.newIndex,
+		Item: parseInt(event.item.dataset.itemId, 10),
+		Pos: event.newIndex+1,
 	})
 }
 

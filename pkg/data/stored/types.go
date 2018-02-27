@@ -54,12 +54,24 @@ type List struct {
 	Body  string
 }
 
+type User struct {
+	ID   int
+	Name string
+}
+
 type ListItem struct {
+	ListID int
 	ItemID int
 }
 
+type OrderedListItem struct {
+	Position int
+	ListItem
+}
+
 type UserFocus struct {
-	Focus int
+	UserID int
+	ItemID int
 }
 
 /*
