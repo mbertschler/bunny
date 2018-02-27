@@ -287,11 +287,32 @@ var sortSet = []struct {
 		Pos:    1,
 		Output: []int{5, 1, 2, 3, 4},
 	},
+	{
+		Value:  6,
+		Pos:    1,
+		Output: []int{6, 1, 2, 3, 4, 5},
+	},
+	{
+		Value:  6,
+		Pos:    6,
+		Output: []int{1, 2, 3, 4, 5, 6},
+	},
+	{
+		Value:  6,
+		Pos:    3,
+		Output: []int{1, 2, 6, 3, 4, 5},
+	},
 }
 
 func TestSortItem(t *testing.T) {
 	for i, test := range sortSet {
 		resetDB()
+		err := forceSetItem(Item{
+			ID: 6,
+		})
+		if err != nil {
+			t.Error(err)
+		}
 		list, err := ItemList(1)
 		if err != nil {
 			t.Error(err)

@@ -209,6 +209,10 @@ func NewItem() (Item, error) {
 	i := Item{}
 	var err error
 	i.ID, err = db.NewItem(storedItem(i))
+	if err != nil {
+		return i, err
+	}
+	err = db.SetListItemPosition(1, i.ID, 1)
 	return i, err
 }
 

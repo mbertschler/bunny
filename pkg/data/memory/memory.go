@@ -108,16 +108,16 @@ func listID(id string) int {
 	return i
 }
 
-func listItemKey(listID, order int) string {
-	return itemListPrefix + strconv.Itoa(listID) +
-		"/" + strconv.Itoa(order)
+func listItemKey(list, pos int) string {
+	return itemListPrefix + strconv.Itoa(list) +
+		"/" + strconv.Itoa(pos)
 }
 
-func listItemID(id string) (listID, order int) {
+func listItemID(id string) (list, pos int) {
 	id = strings.TrimPrefix(id, itemListPrefix)
 	parts := strings.Split(id, "/")
-	listID, _ = strconv.Atoi(parts[0])
-	order, _ = strconv.Atoi(parts[1])
+	list, _ = strconv.Atoi(parts[0])
+	pos, _ = strconv.Atoi(parts[1])
 	return
 }
 
@@ -421,39 +421,59 @@ func (d *DB) SetListItemPosition(list, item, pos int) error {
 			key string
 			val string
 		}
-		if oldPos != 0 {
-			if pos < oldPos {
-				changed := []change{}
-				err = tx.DescendRange("", listItemKey(list, oldPos-1),
-					listItemKey(list, pos-1), func(key, val string) bool {
-						list, order := listItemID(key)
-						key = listItemKey(list, order+1)
-						changed = append(changed, change{key, val})
-						return true
-					})
-				for _, e := range changed {
-					_, _, err = tx.Set(e.key, e.val, nil)
-					if err != nil {
-						return err
-					}
+
+		// var posExists bool
+		_, err = tx.Get(listItemKey(list, pos))
+		if err != nil {
+			// 	posExists = true
+			// } else {
+			err = tx.DescendRange("", listItemKey(list+1, 0),
+				listItemKey(list, 0), func(key, val string) bool {
+					_, oldPos = listItemID(key)
+					oldPos++
+					return false
+				})
+			if err != nil {
+				return err
+			}
+		}
+		// }
+		// if posExists {
+		if pos < oldPos {
+			changed := []change{}
+			err = tx.DescendRange("", listItemKey(list, oldPos-1),
+				listItemKey(list, pos-1), func(key, val string) bool {
+					list, order := listItemID(key)
+					key = listItemKey(list, order+1)
+					changed = append(changed, change{key, val})
+					return true
+				})
+			for _, e := range changed {
+				log.Println("setting", e)
+				_, _, err = tx.Set(e.key, e.val, nil)
+				if err != nil {
+					return err
 				}
-			} else {
-				changed := []change{}
-				err = tx.AscendRange("", listItemKey(list, oldPos+1),
-					listItemKey(list, pos+1), func(key, val string) bool {
-						list, order := listItemID(key)
-						key = listItemKey(list, order-1)
-						changed = append(changed, change{key, val})
-						return true
-					})
-				for _, e := range changed {
-					_, _, err = tx.Set(e.key, e.val, nil)
-					if err != nil {
-						return err
-					}
+			}
+		} else {
+			changed := []change{}
+			err = tx.AscendRange("", listItemKey(list, oldPos+1),
+				listItemKey(list, pos+1), func(key, val string) bool {
+					list, order := listItemID(key)
+					key = listItemKey(list, order-1)
+					changed = append(changed, change{key, val})
+					return true
+				})
+			for _, e := range changed {
+				log.Println("setting", e)
+				_, _, err = tx.Set(e.key, e.val, nil)
+				if err != nil {
+					return err
 				}
 			}
 		}
+		// }
+
 		key := listItemKey(list, pos)
 		li = stored.ListItem{
 			ListID: list, ItemID: item}
