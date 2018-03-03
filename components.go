@@ -277,13 +277,15 @@ func listItemBlock(item data.Item) html.Block {
 
 func displayFocusBlock(focus data.FocusData) html.Block {
 	var list html.Blocks
-	if focus.Focus != nil {
+	if len(focus.Later) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
 			html.I(html.Class("large middle aligned icon "+focusNowIcon).Styles("padding-right:12px")),
 			html.Text("Focus"),
 		))
-		focus.Focus.Focus = data.FocusNone
-		list.Add(listItemBlock(*focus.Focus))
+	}
+	for _, item := range focus.Focus {
+		item.Focus = data.FocusNone
+		list.Add(listItemBlock(item))
 	}
 	if len(focus.Later) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),

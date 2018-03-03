@@ -88,7 +88,7 @@ type focusList struct {
 }
 
 type FocusData struct {
-	Focus *Item
+	Focus []Item
 	Pause []Item
 	Later []Item
 	Watch []Item
@@ -259,8 +259,7 @@ func FocusList(user int) (FocusData, error) {
 	for _, i := range list {
 		switch FocusState(i.Focus) {
 		case FocusNow:
-			item := restoreItem(i)
-			out.Focus = &item
+			out.Focus = append(out.Focus, restoreItem(i))
 		case FocusLater:
 			out.Later = append(out.Later, restoreItem(i))
 		case FocusWatch:

@@ -545,6 +545,69 @@ func (d *DB) SortUserFocusAfter(user, id, after int) error {
 	return nil
 }
 
+func unsetFocus(tx *buntdb.Tx, user, item int) error {
+	val, err := tx.Get(focusKey(user, 1, 1))
+	if err == nil {
+		var uf stored.UserFocus
+		decode(val, &uf)
+		_, err = tx.Delete(focusKey(user, 1, 1))
+		if err != nil {
+			return err
+		}
+		return setUserFocus(tx, user, uf.ItemID, 2)
+	}
+	return nil
+}
+func setUserFocus(tx *buntdb.Tx, user, item, focus int) error {
+	var uf = stored.UserFocus{
+		UserID: user,
+		ItemID: item,
+	}
+	val, err := encode(uf)
+	if err != nil {
+		return err
+	}
+	uf = stored.UserFocus{
+		UserID: user, ItemID: item}
+	start, err := encode(uf)
+	if err != nil {
+		return err
+	}
+	uf = stored.UserFocus{
+		UserID: user, ItemID: item + 1}
+	end, err := encode(uf)
+	if err != nil {
+		return err
+	}
+	var found bool
+	var oldKey string
+	err = tx.AscendRange("userFocus", start, end, func(key, val string) bool {
+		found = true
+		oldKey = key
+		return false
+	})
+
+	if found {
+		_, err = tx.Delete(oldKey)
+		if err != nil {
+			return err
+		}
+	}
+	var order int
+	err = tx.DescendRange("", focusKey(user, focus+1, 0),
+		focusKey(user, focus, 0), func(key, val string) bool {
+			_, _, order = focusIDs(key)
+			return false
+		})
+	if err != nil {
+		return err
+	}
+	order++
+	_, _, err = tx.Set(focusKey(user, focus, order), val, nil)
+
+	return err
+}
+
 func (d *DB) SetUserFocus(user, item, focus int) error {
 	_, err := d.UserByID(user)
 	if err != nil {
@@ -554,54 +617,15 @@ func (d *DB) SetUserFocus(user, item, focus int) error {
 	if err != nil {
 		return err
 	}
-	var uf = stored.UserFocus{
-		UserID: user,
-		ItemID: item,
-	}
-	val, err := encode(uf)
-	if err != nil {
-		return err
-	}
-	return d.db.Update(func(tx *buntdb.Tx) error {
-		uf := stored.UserFocus{
-			UserID: user, ItemID: item}
-		start, err := encode(uf)
-		if err != nil {
-			return err
-		}
-		uf = stored.UserFocus{
-			UserID: user, ItemID: item + 1}
-		end, err := encode(uf)
-		if err != nil {
-			return err
-		}
-		var found bool
-		var oldKey string
-		err = tx.AscendRange("userFocus", start, end, func(key, val string) bool {
-			found = true
-			oldKey = key
-			return false
-		})
 
-		if found {
-			_, err = tx.Delete(oldKey)
+	return d.db.Update(func(tx *buntdb.Tx) error {
+		if focus == 1 {
+			err := unsetFocus(tx, user, item)
 			if err != nil {
 				return err
 			}
 		}
-		var order int
-		err = tx.DescendRange("", focusKey(user, focus+1, 0),
-			focusKey(user, focus, 0), func(key, val string) bool {
-				_, _, order = focusIDs(key)
-				return false
-			})
-		if err != nil {
-			return err
-		}
-		order++
-		_, _, err = tx.Set(focusKey(user, focus, order), val, nil)
-
-		return err
+		return setUserFocus(tx, user, item, focus)
 	})
 }
 

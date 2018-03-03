@@ -5,9 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mbertschler/bunny/pkg/data/stored"
-
 	"github.com/mbertschler/bunny/pkg/data/memory"
+	"github.com/mbertschler/bunny/pkg/data/stored"
 )
 
 func init() {
@@ -247,6 +246,34 @@ func TestSetFocus(t *testing.T) {
 	err = SetFocus(12, 2, FocusWatch)
 	if err == nil {
 		t.Error("expected an error")
+	}
+}
+
+func TestChangeFocusNow(t *testing.T) {
+	resetDB()
+	list, err := FocusList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(list.Focus) != 1 {
+		t.Error("expected one item already focussed")
+	}
+	if list.Focus[0].ID != 1 {
+		t.Error("expected item to be 1", list.Focus[0].ID)
+	}
+	err = SetFocus(1, 3, FocusNow)
+	if err != nil {
+		t.Error(err)
+	}
+	list, err = FocusList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(list.Focus) != 1 {
+		t.Error("expected only one item to be focussed", len(list.Focus))
+	}
+	if list.Focus[0].ID != 3 {
+		t.Error("expected item to be 3", list.Focus[0].ID)
 	}
 }
 
