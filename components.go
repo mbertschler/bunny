@@ -92,11 +92,11 @@ func editItemBlock(data data.Item, new bool) html.Block {
 }
 
 func menuBlock() html.Block {
-	return html.Div(html.Class("ui three item menu"),
-		html.A(append(html.Class("item"),
-			html.AttrPair{Key: "onclick", Value: "listView()"}),
-			html.I(html.Class("comments purple icon")),
-			html.Text("Updates")),
+	return html.Div(html.Class("ui two item menu"),
+		// html.A(append(html.Class("item"),
+		// 	html.AttrPair{Key: "onclick", Value: "listView()"}),
+		// 	html.I(html.Class("comments purple icon")),
+		// 	html.Text("Updates")),
 		html.A(append(html.Class("item"),
 			html.AttrPair{Key: "onclick", Value: "focusView()"}),
 			html.I(html.Class(focusNowIcon+" icon")),
@@ -104,7 +104,7 @@ func menuBlock() html.Block {
 		html.A(append(html.Class("item"),
 			html.AttrPair{Key: "onclick", Value: "listView()"}),
 			html.I(html.Class("clone violet icon")),
-			html.Text("Areas")),
+			html.Text("Workspace")),
 	)
 }
 

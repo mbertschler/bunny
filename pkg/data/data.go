@@ -78,18 +78,8 @@ func setupTestdata() {
 	SetUserFocus(1, 3, FocusWatch)
 }
 
-type focusList struct {
-	Focussed bool
-	Focus    int
-	Pause    []int
-	Later    []int
-	Watch    []int
-	Index    map[int]FocusState
-}
-
 type FocusData struct {
 	Focus []Item
-	Pause []Item
 	Later []Item
 	Watch []Item
 }

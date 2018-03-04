@@ -37,6 +37,24 @@ func WithCause(err error, cause Cause) CauseError {
 	}
 }
 
+type MultiError struct {
+	Errors []error
+}
+
+func (e MultiError) Error() string {
+	out := "MultiError: "
+	for _, e := range e.Errors {
+		out += e.Error()
+	}
+	return out
+}
+
+func CombineErr(err ...error) error {
+	return MultiError{
+		Errors: err,
+	}
+}
+
 type Item struct {
 	ID    int
 	State int

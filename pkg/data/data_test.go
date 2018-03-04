@@ -75,6 +75,34 @@ func TestDeleteItem(t *testing.T) {
 	if err == nil {
 		t.Error("should cause an error")
 	}
+	items, err := ItemList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	for _, i := range items {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
+	}
+	focus, err := FocusList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	for _, i := range focus.Focus {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
+	}
+	for _, i := range focus.Later {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
+	}
+	for _, i := range focus.Watch {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
+	}
 }
 
 func TestSetItem(t *testing.T) {

@@ -25,26 +25,43 @@ import (
 )
 
 const (
-	itemPrefix     = "i/"
-	listPrefix     = "l/"
-	userPrefix     = "u/"
-	itemListPrefix = "il/"
-	focusPrefix    = "f/"
+	itemPrefix      = "i/"
+	listPrefix      = "l/"
+	userPrefix      = "u/"
+	listOrderPrefix = "lo/"
+	listItemPrefix  = "li/"
+	itemFocusPrefix = "if/"
+	userItemPrefix  = "ui/"
 )
 
-func Open() *DB {
-	db, err := buntdb.Open(":memory:")
+// DELETE
+func itemKey(id int) string {
+	return itemPrefix + strconv.Itoa(id)
+}
+
+// DELETE
+func itemID(id string) int {
+	id = strings.TrimPrefix(id, itemPrefix)
+	i, err := strconv.Atoi(id)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("KEY ERROR:", err)
 	}
-	setupIndices(db)
-	return &DB{
-		db: db,
+	return i
+}
+
+func (d *DB) ItemByID(id int) (stored.Item, error) {
+	var item stored.Item
+	tx, err := d.View()
+	if err != nil {
+		return item, err
 	}
+	item, err = tx.items.Get(id)
+	tx.Close()
+	return item, err
 }
 
 func setupIndices(db *buntdb.DB) {
-	db.CreateIndex("userFocus", focusPrefix+"*", func(a, b string) bool {
+	db.CreateIndex("userFocus", itemFocusPrefix+"*", func(a, b string) bool {
 		var focusA, focusB stored.UserFocus
 		err := decode(a, &focusA)
 		if err != nil {
@@ -58,7 +75,7 @@ func setupIndices(db *buntdb.DB) {
 		bStr := "/" + strconv.Itoa(focusB.UserID) + "/" + strconv.Itoa(focusB.ItemID) + "/"
 		return aStr < bStr
 	})
-	db.CreateIndex("listItem", itemListPrefix+"*", func(a, b string) bool {
+	db.CreateIndex("listItem", listItemPrefix+"*", func(a, b string) bool {
 		var liA, liB stored.ListItem
 		err := decode(a, &liA)
 		if err != nil {
@@ -72,20 +89,6 @@ func setupIndices(db *buntdb.DB) {
 		bStr := "/" + strconv.Itoa(liB.ListID) + "/" + strconv.Itoa(liB.ItemID) + "/"
 		return aStr < bStr
 	})
-}
-
-type DB struct {
-	db *buntdb.DB
-}
-
-func itemKey(id int) string {
-	return itemPrefix + strconv.Itoa(id)
-}
-
-func itemID(id string) int {
-	id = strings.TrimPrefix(id, itemPrefix)
-	i, _ := strconv.Atoi(id)
-	return i
 }
 
 func userKey(id int) string {
@@ -109,12 +112,12 @@ func listID(id string) int {
 }
 
 func listItemKey(list, pos int) string {
-	return itemListPrefix + strconv.Itoa(list) +
+	return listItemPrefix + strconv.Itoa(list) +
 		"/" + strconv.Itoa(pos)
 }
 
 func listItemID(id string) (list, pos int) {
-	id = strings.TrimPrefix(id, itemListPrefix)
+	id = strings.TrimPrefix(id, listItemPrefix)
 	parts := strings.Split(id, "/")
 	list, _ = strconv.Atoi(parts[0])
 	pos, _ = strconv.Atoi(parts[1])
@@ -122,32 +125,17 @@ func listItemID(id string) (list, pos int) {
 }
 
 func focusKey(user, focus, order int) string {
-	return focusPrefix + strconv.Itoa(user) +
+	return itemFocusPrefix + strconv.Itoa(user) +
 		"/" + strconv.Itoa(focus) + "/" + strconv.Itoa(order)
 }
 
 func focusIDs(id string) (user, focus, order int) {
-	id = strings.TrimPrefix(id, focusPrefix)
+	id = strings.TrimPrefix(id, itemFocusPrefix)
 	parts := strings.Split(id, "/")
 	user, _ = strconv.Atoi(parts[0])
 	focus, _ = strconv.Atoi(parts[1])
 	order, _ = strconv.Atoi(parts[2])
 	return
-}
-
-func (d *DB) ItemByID(id int) (stored.Item, error) {
-	var val string
-	var err error
-	err = d.db.View(func(tx *buntdb.Tx) error {
-		val, err = tx.Get(itemKey(id))
-		return err
-	})
-	var item stored.Item
-	if err != nil {
-		return item, err
-	}
-	err = decode(val, &item)
-	return item, err
 }
 
 func (d *DB) UserByID(id int) (stored.User, error) {
@@ -206,8 +194,8 @@ func (d *DB) DebugItemList(id int) ([]stored.OrderedListItem, error) {
 		}
 		decode(val, &list)
 		var outerErr error
-		err = tx.AscendRange("", itemListPrefix+strconv.Itoa(id),
-			itemListPrefix+strconv.Itoa(id+1), func(key, val string) bool {
+		err = tx.AscendRange("", listItemPrefix+strconv.Itoa(id),
+			listItemPrefix+strconv.Itoa(id+1), func(key, val string) bool {
 				var listItem stored.ListItem
 				outerErr = decode(val, &listItem)
 				if outerErr != nil {
@@ -241,17 +229,18 @@ func (d *DB) ItemList(id int) (stored.List, []stored.Item, error) {
 		}
 		decode(val, &list)
 		var outerErr error
-		err = tx.AscendRange("", itemListPrefix+strconv.Itoa(id),
-			itemListPrefix+strconv.Itoa(id+1), func(key, val string) bool {
+		err = tx.AscendRange("", listItemPrefix+strconv.Itoa(id),
+			listItemPrefix+strconv.Itoa(id+1), func(key, val string) bool {
 				var listItem stored.ListItem
 				outerErr = decode(val, &listItem)
 				if outerErr != nil {
-					return false
+					log.Println(err)
+					return true
 				}
 				item, err := d.ItemByID(listItem.ItemID)
 				if err != nil {
-					outerErr = err
-					return false
+					log.Println(err)
+					return true
 				}
 				items = append(items, item)
 				return true
@@ -281,18 +270,18 @@ func (d *DB) UserItemList(user, id int) (stored.List, []stored.Item, error) {
 			return err
 		}
 		var outerErr error
-		err = tx.AscendRange("", itemListPrefix+strconv.Itoa(id),
-			itemListPrefix+strconv.Itoa(id+1), func(key, val string) bool {
+		err = tx.AscendRange("", listItemPrefix+strconv.Itoa(id),
+			listItemPrefix+strconv.Itoa(id+1), func(key, val string) bool {
 				var listItem stored.ListItem
 				err := decode(val, &listItem)
 				if err != nil {
-					outerErr = err
-					return false
+					log.Println(err)
+					return true
 				}
 				item, err := d.UserItemByID(user, listItem.ItemID)
 				if err != nil {
-					outerErr = err
-					return false
+					log.Println(err)
+					return true
 				}
 				items = append(items, item)
 				return true
@@ -312,8 +301,8 @@ func (d *DB) FocusList(user int) ([]stored.Item, error) {
 		if err != nil {
 			return err
 		}
-		return tx.AscendRange("", focusPrefix+strconv.Itoa(user),
-			focusPrefix+strconv.Itoa(user+1), func(key, val string) bool {
+		return tx.AscendRange("", itemFocusPrefix+strconv.Itoa(user),
+			itemFocusPrefix+strconv.Itoa(user+1), func(key, val string) bool {
 				_, focus, _ := focusIDs(key)
 				var uf stored.UserFocus
 				decode(val, &uf)
