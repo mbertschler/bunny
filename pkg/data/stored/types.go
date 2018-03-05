@@ -70,11 +70,17 @@ type List struct {
 	State int
 	Title string
 	Body  string
+
+	// internal stored fields
+	Items []int
 }
 
 type User struct {
 	ID   int
 	Name string
+
+	// internal stored fields
+	Focus map[int][]int
 }
 
 type ListItem struct {
@@ -84,12 +90,16 @@ type ListItem struct {
 
 type OrderedListItem struct {
 	Position int
-	ListItem
+	Item
 }
 
 type UserFocus struct {
 	UserID int
 	ItemID int
+}
+
+type UserItem struct {
+	Focus int
 }
 
 /*

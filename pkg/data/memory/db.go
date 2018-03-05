@@ -14,9 +14,22 @@
 package memory
 
 import (
+	"encoding/json"
 	"log"
 
+	"github.com/mbertschler/bunny/pkg/data/stored"
 	"github.com/tidwall/buntdb"
+)
+
+// "tables" or "buckets"
+const (
+	itemPrefix      = "i/"
+	listPrefix      = "l/"
+	userPrefix      = "u/"
+	listOrderPrefix = "lo/"
+	listItemPrefix  = "li/"
+	itemFocusPrefix = "if/"
+	userItemPrefix  = "ui/"
 )
 
 func Open() *DB {
@@ -24,7 +37,6 @@ func Open() *DB {
 	if err != nil {
 		log.Fatal(err)
 	}
-	setupIndices(db)
 	return &DB{
 		db: db,
 	}
@@ -34,28 +46,37 @@ type DB struct {
 	db *buntdb.DB
 }
 
+func (d *DB) Existing(tx *buntdb.Tx, writable bool) Tx {
+	return makeTx(tx, writable)
+}
+
 func (d *DB) View() (Tx, error) {
 	tx, err := d.db.Begin(false)
-	return Tx{
-		rawTx:    tx,
-		writable: false,
-		items:    itemsTx{tx: tx},
-	}, err
+	return makeTx(tx, false), err
 }
 
 func (d *DB) Update() (Tx, error) {
 	tx, err := d.db.Begin(true)
-	return Tx{
+	return makeTx(tx, true), err
+}
+
+func makeTx(tx *buntdb.Tx, writable bool) Tx {
+	t := Tx{
 		rawTx:    tx,
-		writable: true,
-		items:    itemsTx{tx: tx},
-	}, err
+		writable: writable,
+	}
+	t.items = itemsTx{tx: tx, parent: &t}
+	t.lists = listsTx{tx: tx, parent: &t}
+	t.users = usersTx{tx: tx, parent: &t}
+	return t
 }
 
 type Tx struct {
 	rawTx    *buntdb.Tx
 	writable bool
 	items    itemsTx
+	lists    listsTx
+	users    usersTx
 }
 
 func (t *Tx) Close() {
@@ -76,4 +97,20 @@ func (t *Tx) Rollback() {
 		log.Println("TX ERROR:", err)
 	}
 	return
+}
+
+func encode(in interface{}) (string, error) {
+	out, err := json.Marshal(in)
+	if err != nil {
+		return string(out), stored.WithCause(err, stored.CauseSerialize)
+	}
+	return string(out), nil
+}
+
+func decode(in string, dest interface{}) error {
+	err := json.Unmarshal([]byte(in), dest)
+	if err != nil {
+		return stored.WithCause(err, stored.CauseMalformed)
+	}
+	return nil
 }

@@ -23,7 +23,8 @@ import (
 )
 
 type itemsTx struct {
-	tx *buntdb.Tx
+	parent *Tx
+	tx     *buntdb.Tx
 }
 
 func (t *itemsTx) Key(id int) string {
@@ -49,10 +50,39 @@ func (t *itemsTx) Get(id int) (stored.Item, error) {
 	return item, err
 }
 
-func (t *itemsTx) Set() error {
-	return nil
+func (t *itemsTx) UserItem(user, item int) (stored.Item, error) {
+	i, err := t.Get(item)
+	if err != nil {
+		return i, err
+	}
+	focus, err := t.parent.users.ItemFocus(user, item)
+	i.Focus = focus
+	return i, err
 }
 
-func (t *itemsTx) Delete() error {
-	return nil
+func (t *itemsTx) Set(i stored.Item) error {
+	val, err := encode(i)
+	if err != nil {
+		return err
+	}
+	_, _, err = t.tx.Set(t.Key(i.ID), val, nil)
+	return err
+}
+
+func (t *itemsTx) New(i stored.Item) (int, error) {
+	id := 0
+	err := t.tx.DescendKeys(itemPrefix+"*",
+		func(key, val string) bool {
+			id = t.ID(key)
+			return false
+		})
+	id++
+	i.ID = id
+	err = t.Set(i)
+	return id, err
+}
+
+func (t *itemsTx) Delete(id int) error {
+	_, err := t.tx.Delete(t.Key(id))
+	return err
 }

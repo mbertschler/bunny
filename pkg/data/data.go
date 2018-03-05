@@ -64,7 +64,9 @@ func setupTestdata() {
 	})
 
 	forceSetList(List{
-		ID: 1,
+		ID:    1,
+		Title: "Testlist",
+		Body:  "just for testing",
 	})
 
 	SetListItemPosition(1, 1, 1)
