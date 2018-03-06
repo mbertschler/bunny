@@ -55,6 +55,19 @@ func CombineErr(err ...error) error {
 	}
 }
 
+const (
+	ItemOpen = iota
+	ItemComplete
+	ItemArchived
+)
+
+const (
+	FocusNone = iota
+	FocusNow
+	FocusLater
+	FocusWatch
+)
+
 type Item struct {
 	ID    int
 	State int

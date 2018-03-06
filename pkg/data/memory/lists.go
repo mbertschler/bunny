@@ -96,11 +96,20 @@ func (t *listsTx) Set(l stored.List) error {
 }
 
 func (t *listsTx) SetItemPos(list, item, pos int) error {
+	// TODO: remove from other lists
 	l, err := t.Get(list)
 	if err != nil {
 		return err
 	}
-	l.Items = append(l.Items, item)
+	i, ok := findInArray(l.Items, item)
+	if !ok {
+		i = len(l.Items)
+		l.Items = append(l.Items, item)
+	}
+	l.Items, err = sortArray(l.Items, i, pos-1) // 0 indexed not 1
+	if err != nil {
+		return err
+	}
 	return t.Set(l)
 }
 

@@ -422,7 +422,7 @@ func TestSortItem(t *testing.T) {
 		should := []int{1, 2, 3, 4, 5}
 		ids := extractIDs(list)
 		if !reflect.DeepEqual(ids, should) {
-			t.Error("pre id order is wrong", ids)
+			t.Error("pre id order is wrong", ids, list)
 		}
 		err = SetListItemPosition(1, test.Value, test.Pos)
 		if err != nil {

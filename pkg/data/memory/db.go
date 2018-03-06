@@ -23,13 +23,9 @@ import (
 
 // "tables" or "buckets"
 const (
-	itemPrefix      = "i/"
-	listPrefix      = "l/"
-	userPrefix      = "u/"
-	listOrderPrefix = "lo/"
-	listItemPrefix  = "li/"
-	itemFocusPrefix = "if/"
-	userItemPrefix  = "ui/"
+	itemPrefix = "i/"
+	listPrefix = "l/"
+	userPrefix = "u/"
 )
 
 func Open() *DB {

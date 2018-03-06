@@ -64,7 +64,8 @@ func (t *usersTx) ItemFocus(user, item int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return findItemInFocusmap(u.Focus, item), nil
+	focus, _ := findItemInFocusmap(u.Focus, item)
+	return focus, nil
 }
 
 func (t *usersTx) SetFocus(user, item, focus int) error {
@@ -75,19 +76,33 @@ func (t *usersTx) SetFocus(user, item, focus int) error {
 	if u.Focus == nil {
 		u.Focus = make(map[int][]int)
 	}
+	oldFocus, index := findItemInFocusmap(u.Focus, item)
+	if oldFocus != 0 {
+		u.Focus[oldFocus] = deleteFromArray(u.Focus[oldFocus], index)
+	}
+	if focus == stored.FocusNow && len(u.Focus[focus]) > 0 {
+		err = t.SetFocus(user, u.Focus[focus][0], stored.FocusLater)
+		if err != nil {
+			return err
+		}
+		u, err = t.Get(user)
+		if err != nil {
+			return err
+		}
+	}
 	u.Focus[focus] = append(u.Focus[focus], item)
 	return t.Set(u)
 }
 
-func findItemInFocusmap(m map[int][]int, id int) int {
+func findItemInFocusmap(m map[int][]int, id int) (focus, index int) {
 	for _, focus := range []int{1, 2, 3} {
-		for _, focusID := range m[focus] {
+		for i, focusID := range m[focus] {
 			if id == focusID {
-				return focus
+				return focus, i
 			}
 		}
 	}
-	return 0
+	return 0, 0
 }
 
 func (t *usersTx) AllByUser(user int) ([]stored.Item, error) {

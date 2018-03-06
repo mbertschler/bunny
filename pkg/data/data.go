@@ -16,6 +16,8 @@
 package data
 
 import (
+	"log"
+
 	"github.com/mbertschler/bunny/pkg/data/memory"
 	"github.com/mbertschler/bunny/pkg/data/stored"
 )
@@ -28,56 +30,62 @@ func init() {
 }
 
 func setupTestdata() {
-	forceSetUser(User{
+	logErr(forceSetUser(User{
 		ID:   1,
 		Name: "martin",
-	})
-	forceSetItem(Item{
+	}))
+	logErr(forceSetItem(Item{
 		ID:    1,
 		State: ItemOpen,
 		Title: "Hello world!",
 		Body:  "Let's have some fun with bunny!",
-	})
-	forceSetItem(Item{
+	}))
+	logErr(forceSetItem(Item{
 		ID:    2,
 		State: ItemComplete,
 		Title: "Look at Bunny",
 		Body:  "By reading this text you alredy completed this item.",
-	})
-	forceSetItem(Item{
+	}))
+	logErr(forceSetItem(Item{
 		ID:    3,
 		State: ItemOpen,
 		Title: "Somebody else does it",
 		Body:  "This is something that I am interested in. On the other hand I don't intend to work on it.",
-	})
-	forceSetItem(Item{
+	}))
+	logErr(forceSetItem(Item{
 		ID:    4,
 		State: ItemArchived,
 		Title: "Nevermind me, I'm old",
 		Body:  "I am done and no longer relevant, so I got archived.",
-	})
-	forceSetItem(Item{
+	}))
+	logErr(forceSetItem(Item{
 		ID:    5,
 		State: ItemOpen,
 		Title: "I started it but don't know how to finish",
 		Body:  "Somebody please help me so that I can complete this item.",
-	})
+	}))
 
-	forceSetList(List{
+	logErr(forceSetList(List{
 		ID:    1,
 		Title: "Testlist",
 		Body:  "just for testing",
-	})
+	}))
 
-	SetListItemPosition(1, 1, 1)
-	SetListItemPosition(1, 2, 2)
-	SetListItemPosition(1, 3, 3)
-	SetListItemPosition(1, 4, 4)
-	SetListItemPosition(1, 5, 5)
+	logErr(SetListItemPosition(1, 1, 1))
+	logErr(SetListItemPosition(1, 2, 2))
+	logErr(SetListItemPosition(1, 3, 3))
+	logErr(SetListItemPosition(1, 4, 4))
+	logErr(SetListItemPosition(1, 5, 5))
 
-	SetUserFocus(1, 1, FocusNow)
-	SetUserFocus(1, 2, FocusLater)
-	SetUserFocus(1, 3, FocusWatch)
+	logErr(SetUserFocus(1, 1, FocusNow))
+	logErr(SetUserFocus(1, 2, FocusLater))
+	logErr(SetUserFocus(1, 3, FocusWatch))
+}
+
+func logErr(err error) {
+	if err != nil {
+		log.Println("setup error:", err)
+	}
 }
 
 type FocusData struct {
@@ -110,18 +118,18 @@ type List struct {
 type ItemState int8
 
 const (
-	ItemOpen ItemState = iota
-	ItemComplete
-	ItemArchived
+	ItemOpen     = stored.ItemOpen
+	ItemComplete = stored.ItemComplete
+	ItemArchived = stored.ItemArchived
 )
 
 type FocusState int8
 
 const (
-	FocusNone FocusState = iota
-	FocusNow
-	FocusLater
-	FocusWatch
+	FocusNone  = stored.FocusNone
+	FocusNow   = stored.FocusNow
+	FocusLater = stored.FocusLater
+	FocusWatch = stored.FocusWatch
 )
 
 func ItemByID(id int) (Item, error) {
