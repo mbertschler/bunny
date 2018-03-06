@@ -93,6 +93,7 @@ func (d *DB) UserItemList(user, id int) (stored.List, []stored.Item, error) {
 	if err != nil {
 		return list, items, err
 	}
+	defer tx.Close()
 	items, err = tx.lists.UserItems(user, id)
 	return list, items, err
 }
@@ -148,6 +149,15 @@ func (d *DB) ForceSetList(l stored.List) error {
 	}
 	defer tx.Close()
 	return tx.lists.Set(l)
+}
+
+func (d *DB) ForceSetArea(l stored.Area) error {
+	tx, err := d.Update()
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+	return tx.areas.Set(l)
 }
 
 func (d *DB) DeleteList(id int) error {

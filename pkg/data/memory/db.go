@@ -25,6 +25,7 @@ import (
 const (
 	itemPrefix = "i/"
 	listPrefix = "l/"
+	areaPrefix = "a/"
 	userPrefix = "u/"
 )
 
@@ -63,6 +64,7 @@ func makeTx(tx *buntdb.Tx, writable bool) Tx {
 	}
 	t.items = itemsTx{tx: tx, parent: &t}
 	t.lists = listsTx{tx: tx, parent: &t}
+	t.areas = areasTx{tx: tx, parent: &t}
 	t.users = usersTx{tx: tx, parent: &t}
 	return t
 }
@@ -72,6 +74,7 @@ type Tx struct {
 	writable bool
 	items    itemsTx
 	lists    listsTx
+	areas    areasTx
 	users    usersTx
 }
 

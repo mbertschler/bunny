@@ -88,6 +88,25 @@ type List struct {
 	Items []int
 }
 
+type ThingType int8
+
+const (
+	ThingItem = iota
+	ThingList
+)
+
+type Thing struct {
+	Type ThingType
+	ID   int
+}
+
+type Area struct {
+	ID     int
+	Title  string
+	Body   string
+	Things []Thing
+}
+
 type User struct {
 	ID   int
 	Name string
@@ -96,23 +115,9 @@ type User struct {
 	Focus map[int][]int
 }
 
-type ListItem struct {
-	ListID int
-	ItemID int
-}
-
 type OrderedListItem struct {
 	Position int
 	Item
-}
-
-type UserFocus struct {
-	UserID int
-	ItemID int
-}
-
-type UserItem struct {
-	Focus int
 }
 
 /*

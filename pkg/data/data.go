@@ -107,6 +107,10 @@ type Item struct {
 	Body  string
 }
 
+func (Item) thingType() string {
+	return "Item"
+}
+
 type List struct {
 	ID    int
 	State ItemState
@@ -115,21 +119,36 @@ type List struct {
 	Items []Item
 }
 
+func (List) thingType() string {
+	return "List"
+}
+
+type Thing interface {
+	thingType() string
+}
+
+type Area struct {
+	ID    int
+	Title string
+	Body  string
+	List  []Thing
+}
+
 type ItemState int8
 
 const (
-	ItemOpen     = stored.ItemOpen
-	ItemComplete = stored.ItemComplete
-	ItemArchived = stored.ItemArchived
+	ItemOpen     ItemState = stored.ItemOpen
+	ItemComplete ItemState = stored.ItemComplete
+	ItemArchived ItemState = stored.ItemArchived
 )
 
 type FocusState int8
 
 const (
-	FocusNone  = stored.FocusNone
-	FocusNow   = stored.FocusNow
-	FocusLater = stored.FocusLater
-	FocusWatch = stored.FocusWatch
+	FocusNone  FocusState = stored.FocusNone
+	FocusNow   FocusState = stored.FocusNow
+	FocusLater FocusState = stored.FocusLater
+	FocusWatch FocusState = stored.FocusWatch
 )
 
 func ItemByID(id int) (Item, error) {
@@ -163,6 +182,22 @@ func restoreUser(in stored.User) User {
 	return User{
 		ID:   in.ID,
 		Name: in.Name,
+	}
+}
+
+func storedArea(in Area) stored.Area {
+	return stored.Area{
+		ID:    in.ID,
+		Title: in.Title,
+		Body:  in.Body,
+	}
+}
+
+func restoreArea(in stored.Area) Area {
+	return Area{
+		ID:    in.ID,
+		Title: in.Title,
+		Body:  in.Body,
 	}
 }
 
@@ -291,6 +326,10 @@ func forceSetList(in List) error {
 	return db.ForceSetList(storedList(in))
 }
 
+func forceSetArea(in Area) error {
+	return db.ForceSetArea(storedArea(in))
+}
+
 func forceSetUser(in User) error {
 	return db.ForceSetUser(storedUser(in))
 }
@@ -304,3 +343,9 @@ func UserByID(id int) (User, error) {
 	i := restoreUser(stored)
 	return i, err
 }
+
+// func AreaByID(id int) (Area, error) {
+// 	stored, err := db.AreaByID(id)
+// 	a := restoreArea(stored)
+// 	return a, err
+// }
