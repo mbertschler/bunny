@@ -262,7 +262,7 @@ func itemDeleteHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	data.DeleteItem(arg)
-	list, err := data.ItemList(1)
+	list, err := data.UserItemList(1, 1)
 	if err != nil {
 		return nil, err
 	}

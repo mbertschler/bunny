@@ -18,6 +18,48 @@ func resetDB() {
 	setupTestdata()
 }
 
+func TestResetDB(t *testing.T) {
+	resetDB()
+	u, err := UserByID(1)
+	if err != nil {
+		t.Error(err)
+	}
+	wantUser := User{
+		ID:   1,
+		Name: "martin",
+	}
+	if u != wantUser {
+		t.Error("not equal")
+	}
+
+	wantItem := Item{
+		ID:    3,
+		State: ItemOpen,
+		Title: "Somebody else does it",
+		Body:  "This is something that I am interested in. On the other hand I don't intend to work on it.",
+	}
+	i, err := ItemByID(3)
+	if err != nil {
+		t.Error(err)
+	}
+	if i != wantItem {
+		t.Error("not equal")
+	}
+
+	l, err := ListByID(1)
+	if err != nil {
+		t.Error(err)
+	}
+	wantList := List{
+		ID:    1,
+		Title: "Testlist",
+		Body:  "just for testing",
+	}
+	if !reflect.DeepEqual(l, wantList) {
+		t.Error("not equal")
+	}
+}
+
 func TestItemByID(t *testing.T) {
 	resetDB()
 	target := Item{
@@ -74,6 +116,34 @@ func TestDeleteItem(t *testing.T) {
 	_, err = ItemByID(2)
 	if err == nil {
 		t.Error("should cause an error")
+	}
+	items, err := ItemList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	for _, i := range items {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
+	}
+	focus, err := FocusList(1)
+	if err != nil {
+		t.Error(err)
+	}
+	for _, i := range focus.Focus {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
+	}
+	for _, i := range focus.Later {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
+	}
+	for _, i := range focus.Watch {
+		if i.ID == 2 {
+			t.Error("ID 2 is still referenced")
+		}
 	}
 }
 
@@ -352,7 +422,7 @@ func TestSortItem(t *testing.T) {
 		should := []int{1, 2, 3, 4, 5}
 		ids := extractIDs(list)
 		if !reflect.DeepEqual(ids, should) {
-			t.Error("pre id order is wrong", ids)
+			t.Error("pre id order is wrong", ids, list)
 		}
 		err = SetListItemPosition(1, test.Value, test.Pos)
 		if err != nil {
@@ -375,7 +445,7 @@ func TestSortItem(t *testing.T) {
 func extractIDs(list []stored.OrderedListItem) []int {
 	out := make([]int, len(list))
 	for i := range list {
-		out[i] = list[i].ItemID
+		out[i] = list[i].ID
 	}
 	return out
 }
