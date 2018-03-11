@@ -54,6 +54,10 @@ function listView() {
 	callGuiAPI("listView", null)
 }
 
+function areaView() {
+	callGuiAPI("areaView", null)
+}
+
 function itemEdit(id) {
 	callGuiAPI("itemEdit", id)
 }

@@ -27,7 +27,7 @@ var (
 	focusWatchIcon = "blue unhide"
 )
 
-func pageBlock(content html.Block) html.Block {
+func layoutBlock(content html.Block) html.Block {
 	return html.Blocks{
 		html.Doctype("html"),
 		html.Head(nil,
@@ -108,7 +108,7 @@ func menuBlock() html.Block {
 	)
 }
 
-func displayItemBlock(d data.Item) html.Block {
+func viewItemBlock(d data.Item) html.Block {
 	var status, statusButton html.Block
 	var archiveButton, archiveLabel html.Block
 
@@ -211,7 +211,7 @@ func displayItemBlock(d data.Item) html.Block {
 	)
 }
 
-func displayThingsBlock(d []data.Thing) html.Block {
+func viewThingsBlock(d []data.Thing) html.Block {
 	var list, archived html.Blocks
 	for _, t := range d {
 		block := listItemBlock(t)
@@ -249,7 +249,7 @@ func displayThingsBlock(d []data.Thing) html.Block {
 	)
 }
 
-func displayListBlock(d []data.Item) html.Block {
+func viewListBlock(d []data.Item) html.Block {
 	var list, archived html.Blocks
 	for _, t := range d {
 		block := listItemBlock(t)

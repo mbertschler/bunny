@@ -14,10 +14,8 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 
@@ -27,22 +25,8 @@ import (
 	"github.com/mbertschler/bunny/pkg/data"
 )
 
-var config = struct {
-	port string // $BUNNY_PORT
-	root string // $BUNNY_ROOT
-}{}
-
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	setFromEnvironment(&config.port, "BUNNY_PORT", "3080")
-	setFromEnvironment(&config.root, "BUNNY_ROOT", "")
-	if config.root == "" {
-		var err error
-		config.root, err = findProjectFolder()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	setupConfig()
 	log.Println("Bunny :) running at port", config.port)
 	log.Println(http.ListenAndServe(":"+config.port, router()))
 }
@@ -66,30 +50,7 @@ func router() *chi.Mux {
 	return r
 }
 
-func setFromEnvironment(target *string, name, fallback string) {
-	val, ok := os.LookupEnv(name)
-	if ok {
-		*target = val
-	} else {
-		*target = fallback
-	}
-}
-
-func findProjectFolder() (string, error) {
-	gopath := os.Getenv("GOPATH")
-	paths := filepath.SplitList(gopath)
-	for _, p := range paths {
-		project := filepath.Join(p, "src", "github.com", "mbertschler", "bunny")
-		info, err := os.Stat(project)
-		if err == nil && info.IsDir() {
-			return project, nil
-		}
-	}
-	return "", errors.New("couldn't find the project in GOPATH")
-}
-
 func renderItemPage(w http.ResponseWriter, r *http.Request) {
-
 	ctx := chi.RouteContext(r.Context())
 	idStr := ctx.URLParam("id")
 	id, err := strconv.Atoi(idStr)
@@ -100,7 +61,7 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(pageBlock(displayItemBlock(item)), w)
+	err = html.Render(layoutBlock(viewItemBlock(item)), w)
 	if err != nil {
 		log.Println(err)
 	}
@@ -111,7 +72,7 @@ func renderAreaPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(pageBlock(displayThingsBlock(things)), w)
+	err = html.Render(layoutBlock(viewThingsBlock(things)), w)
 	if err != nil {
 		log.Println(err)
 	}
@@ -122,7 +83,7 @@ func renderListPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(pageBlock(displayListBlock(list)), w)
+	err = html.Render(layoutBlock(viewListBlock(list)), w)
 	if err != nil {
 		log.Println(err)
 	}
@@ -133,7 +94,7 @@ func renderFocusPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(pageBlock(displayFocusBlock(focus)), w)
+	err = html.Render(layoutBlock(displayFocusBlock(focus)), w)
 	if err != nil {
 		log.Println(err)
 	}
