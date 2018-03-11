@@ -78,6 +78,8 @@ type Item struct {
 	Focus int
 }
 
+func (Item) Type() ThingType { return TypeItem }
+
 type List struct {
 	ID    int
 	State int
@@ -88,23 +90,29 @@ type List struct {
 	Items []int
 }
 
+func (List) Type() ThingType { return TypeList }
+
 type ThingType int8
 
 const (
-	ThingItem = iota
-	ThingList
+	TypeItem = iota + 1
+	TypeList
 )
 
-type Thing struct {
+type ThingID struct {
 	Type ThingType
 	ID   int
+}
+
+type Thing interface {
+	Type() ThingType
 }
 
 type Area struct {
 	ID     int
 	Title  string
 	Body   string
-	Things []Thing
+	Things []ThingID
 }
 
 type User struct {

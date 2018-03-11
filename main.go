@@ -60,8 +60,9 @@ func router() *chi.Mux {
 				filepath.Join(config.root, "js", "src")))))
 	r.Post("/gui/", guiAPI().ServeHTTP)
 	r.Get("/item/{id}", renderItemPage)
+	r.Get("/list/{id}", renderListPage)
 	r.Get("/focus/", renderFocusPage)
-	r.Get("/", renderListPage)
+	r.Get("/", renderAreaPage)
 	return r
 }
 
@@ -100,6 +101,17 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	err = html.Render(pageBlock(displayItemBlock(item)), w)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func renderAreaPage(w http.ResponseWriter, r *http.Request) {
+	_, things, err := data.UserArea(1, 1)
+	if err != nil {
+		log.Println(err)
+	}
+	err = html.Render(pageBlock(displayThingsBlock(things)), w)
 	if err != nil {
 		log.Println(err)
 	}

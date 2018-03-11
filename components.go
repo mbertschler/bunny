@@ -211,19 +211,18 @@ func displayItemBlock(d data.Item) html.Block {
 	)
 }
 
-func displayListBlock(d []data.Item) html.Block {
+func displayThingsBlock(d []data.Thing) html.Block {
 	var list, archived html.Blocks
-	for _, item := range d {
-		block := listItemBlock(item)
-		switch item.State {
-		case data.ItemArchived:
+	for _, t := range d {
+		block := listItemBlock(t)
+		if t.Archived() {
 			if len(archived) == 0 {
 				archived.Add(html.H4(html.Styles("padding-left:48px"),
 					html.Text("Archived"),
 				))
 			}
 			archived.Add(block)
-		default:
+		} else {
 			list.Add(block)
 		}
 	}
@@ -231,6 +230,49 @@ func displayListBlock(d []data.Item) html.Block {
 		menuBlock(),
 		html.Div(html.Class("ui grid"),
 			html.Div(html.Class("column"),
+				html.Button(append(html.Class("ui right floated positive button"),
+					html.AttrPair{Key: "onclick", Value: "itemNew()"}),
+					html.Text("New item"),
+				),
+				html.Button(append(html.Class("ui right floated purple button"),
+					html.AttrPair{Key: "onclick", Value: "listNew()"}),
+					html.Text("New list"),
+				),
+			),
+		),
+		html.Div(html.Id("item-list").Class("ui relaxed selection list"),
+			list,
+		),
+		html.Div(html.Id("archive-list").Class("ui relaxed selection list"),
+			archived,
+		),
+	)
+}
+
+func displayListBlock(d []data.Item) html.Block {
+	var list, archived html.Blocks
+	for _, t := range d {
+		block := listItemBlock(t)
+		if t.Archived() {
+			if len(archived) == 0 {
+				archived.Add(html.H4(html.Styles("padding-left:48px"),
+					html.Text("Archived"),
+				))
+			}
+			archived.Add(block)
+		} else {
+			list.Add(block)
+		}
+	}
+	return html.Div(html.Class("ui text container"),
+		menuBlock(),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column"),
+				html.Button(append(html.Class("ui left floated button"),
+					html.AttrPair{Key: "onclick", Value: "areaView()"}),
+					html.I(html.Class("chevron left icon")),
+					html.Text("Area"),
+				),
 				html.Button(append(html.Class("ui right floated positive button"),
 					html.AttrPair{Key: "onclick", Value: "itemNew()"}),
 					html.Text("New item"),
@@ -246,7 +288,17 @@ func displayListBlock(d []data.Item) html.Block {
 	)
 }
 
-func listItemBlock(item data.Item) html.Block {
+func listItemBlock(item data.Thing) html.Block {
+	switch it := item.(type) {
+	case data.Item:
+		return itemBlock(it)
+	case data.List:
+		return listBlock(it)
+	}
+	return nil
+}
+
+func itemBlock(item data.Item) html.Block {
 	var iconClass string
 	switch item.State {
 	case data.ItemOpen:
@@ -271,6 +323,24 @@ func listItemBlock(item data.Item) html.Block {
 		focusIcon,
 		html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
 			html.Text(item.Title),
+		),
+	)
+}
+
+func listBlock(list data.List) html.Block {
+	var iconClass string
+	switch list.State {
+	case data.ItemOpen:
+		iconClass = "violet square"
+	default:
+		iconClass = "purple square check"
+	}
+
+	return html.Div(append(html.Class("item").Data("list-id", list.ID),
+		html.AttrPair{Key: "onclick", Value: fmt.Sprintf("listView(%d)", list.ID)}),
+		html.I(html.Class("large middle aligned icon "+iconClass)),
+		html.Div(html.Class("middle aligned content").Styles("color:rgba(0,0,0,0.87)"),
+			html.Text(list.Title),
 		),
 	)
 }

@@ -16,6 +16,8 @@ package memory
 import (
 	"errors"
 	"fmt"
+
+	"github.com/mbertschler/bunny/pkg/data/stored"
 )
 
 func sortArrayOld(arr []int, old, new int) ([]int, error) {
@@ -41,8 +43,27 @@ func findInArray(in []int, search int) (int, bool) {
 	return 0, false
 }
 
+func findInThingArray(in []stored.ThingID, search stored.ThingID) (int, bool) {
+	for i := range in {
+		if in[i] == search {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
 func deleteFromArray(in []int, idx int) []int {
 	out := []int{}
+	for i, el := range in {
+		if i != idx {
+			out = append(out, el)
+		}
+	}
+	return out
+}
+
+func deleteFromThingArray(in []stored.ThingID, idx int) []stored.ThingID {
+	out := []stored.ThingID{}
 	for i, el := range in {
 		if i != idx {
 			out = append(out, el)
@@ -62,6 +83,33 @@ func sortArray(in []int, old, new int) ([]int, error) {
 			"invalid sorting from", old, "to", new, "max", max))
 	}
 	out := make([]int, len(in))
+	i, j := 0, 0
+	for j < max {
+		if j == new {
+			out[j] = in[old]
+			j++
+			continue
+		}
+		if i != old {
+			out[j] = in[i]
+			j++
+		}
+		i++
+	}
+	return out, nil
+}
+
+func sortThingArray(in []stored.ThingID, old, new int) ([]stored.ThingID, error) {
+	if old == new {
+		return in, nil
+	}
+	max := len(in)
+	if !(old < max && old >= 0 &&
+		new < max && new >= 0) {
+		return in, errors.New(fmt.Sprintln(
+			"invalid sorting from", old, "to", new, "max", max))
+	}
+	out := make([]stored.ThingID, len(in))
 	i, j := 0, 0
 	for j < max {
 		if j == new {

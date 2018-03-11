@@ -64,6 +64,18 @@ func setupTestdata() {
 		Title: "I started it but don't know how to finish",
 		Body:  "Somebody please help me so that I can complete this item.",
 	}))
+	logErr(forceSetItem(Item{
+		ID:    6,
+		State: ItemComplete,
+		Title: "Create areas",
+		Body:  "A single list is not enough, we need areas that hold many lists and items.",
+	}))
+	logErr(forceSetItem(Item{
+		ID:    7,
+		State: ItemOpen,
+		Title: "This item clearly doesn't belong into a list",
+		Body:  "What to do with an item if you don't know how to categorize it?",
+	}))
 
 	logErr(forceSetList(List{
 		ID:    1,
@@ -77,9 +89,20 @@ func setupTestdata() {
 	logErr(SetListItemPosition(1, 4, 4))
 	logErr(SetListItemPosition(1, 5, 5))
 
+	logErr(forceSetArea(Area{
+		ID:    1,
+		Title: "Starting area",
+		Body:  "area that keeps inital data",
+	}))
+
+	logErr(SetAreaThingPosition(1, TypeItem, 7, 1))
+	logErr(SetAreaThingPosition(1, TypeList, 1, 2))
+	logErr(SetAreaThingPosition(1, TypeItem, 6, 3))
+
 	logErr(SetUserFocus(1, 1, FocusNow))
 	logErr(SetUserFocus(1, 2, FocusLater))
 	logErr(SetUserFocus(1, 3, FocusWatch))
+	logErr(SetUserFocus(1, 7, FocusLater))
 }
 
 func logErr(err error) {
@@ -107,8 +130,10 @@ type Item struct {
 	Body  string
 }
 
-func (Item) thingType() string {
-	return "Item"
+func (Item) thingType() ThingType { return TypeItem }
+
+func (i Item) Archived() bool {
+	return i.State == ItemArchived
 }
 
 type List struct {
@@ -119,13 +144,23 @@ type List struct {
 	Items []Item
 }
 
-func (List) thingType() string {
-	return "List"
+func (List) thingType() ThingType { return TypeList }
+
+func (l List) Archived() bool {
+	return l.State == ItemArchived
 }
 
 type Thing interface {
-	thingType() string
+	Archived() bool
+	thingType() ThingType
 }
+
+type ThingType int8
+
+const (
+	TypeItem ThingType = stored.TypeItem
+	TypeList ThingType = stored.TypeList
+)
 
 type Area struct {
 	ID    int
@@ -238,6 +273,26 @@ func restoreList(in stored.List) List {
 	}
 }
 
+func storedThing(in Thing) stored.Thing {
+	switch in.thingType() {
+	case TypeList:
+		return storedList(in.(List))
+	case TypeItem:
+		return storedItem(in.(Item))
+	}
+	return nil
+}
+
+func restoreThing(in stored.Thing) Thing {
+	switch in.Type() {
+	case stored.TypeList:
+		return restoreList(in.(stored.List))
+	case stored.TypeItem:
+		return restoreItem(in.(stored.Item))
+	}
+	return nil
+}
+
 func NewItem() (Item, error) {
 	i := Item{}
 	var err error
@@ -285,6 +340,18 @@ func UserItemList(user, id int) ([]Item, error) {
 	return out, nil
 }
 
+func UserArea(user, id int) (Area, []Thing, error) {
+	var out []Thing
+	area, items, err := db.UserArea(user, id)
+	if err != nil {
+		return restoreArea(area), nil, err
+	}
+	for _, i := range items {
+		out = append(out, restoreThing(i))
+	}
+	return restoreArea(area), out, nil
+}
+
 func FocusList(user int) (FocusData, error) {
 	var out FocusData
 	list, err := db.FocusList(user)
@@ -306,6 +373,10 @@ func FocusList(user int) (FocusData, error) {
 
 func SetListItemPosition(list, item, pos int) error {
 	return db.SetListItemPosition(list, item, pos)
+}
+
+func SetAreaThingPosition(area int, typ ThingType, id, pos int) error {
+	return db.SetAreaThingPosition(area, stored.ThingType(typ), id, pos)
 }
 
 func SetUserFocus(user, item int, focus FocusState) error {
@@ -344,8 +415,8 @@ func UserByID(id int) (User, error) {
 	return i, err
 }
 
-// func AreaByID(id int) (Area, error) {
-// 	stored, err := db.AreaByID(id)
-// 	a := restoreArea(stored)
-// 	return a, err
-// }
+func AreaByID(id int) (Area, error) {
+	stored, err := db.AreaByID(id)
+	a := restoreArea(stored)
+	return a, err
+}

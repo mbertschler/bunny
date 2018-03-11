@@ -55,6 +55,17 @@ func (d *DB) UserItemByID(user, id int) (stored.Item, error) {
 	return item, err
 }
 
+func (d *DB) AreaByID(id int) (stored.Area, error) {
+	var area stored.Area
+	tx, err := d.View()
+	if err != nil {
+		return area, err
+	}
+	area, err = tx.areas.Get(id)
+	tx.Close()
+	return area, err
+}
+
 func (d *DB) DebugItemList(id int) ([]stored.OrderedListItem, error) {
 	var items []stored.OrderedListItem
 	_, raw, err := d.ItemList(id)
@@ -94,8 +105,28 @@ func (d *DB) UserItemList(user, id int) (stored.List, []stored.Item, error) {
 		return list, items, err
 	}
 	defer tx.Close()
+	list, err = tx.lists.Get(id)
+	if err != nil {
+		return list, items, err
+	}
 	items, err = tx.lists.UserItems(user, id)
 	return list, items, err
+}
+
+func (d *DB) UserArea(user, id int) (stored.Area, []stored.Thing, error) {
+	var items []stored.Thing
+	var area stored.Area
+	tx, err := d.View()
+	if err != nil {
+		return area, items, err
+	}
+	defer tx.Close()
+	area, err = tx.areas.Get(id)
+	if err != nil {
+		return area, items, err
+	}
+	items, err = tx.areas.UserThings(user, id)
+	return area, items, err
 }
 
 func (d *DB) FocusList(user int) ([]stored.Item, error) {
@@ -193,6 +224,16 @@ func (d *DB) SetListItemPosition(list, item, pos int) error {
 		return err
 	}
 	err = tx.lists.SetItemPos(list, item, pos)
+	tx.Close()
+	return err
+}
+
+func (d *DB) SetAreaThingPosition(area int, typ stored.ThingType, id, pos int) error {
+	tx, err := d.Update()
+	if err != nil {
+		return err
+	}
+	err = tx.areas.SetThingPos(area, typ, id, pos)
 	tx.Close()
 	return err
 }

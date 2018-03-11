@@ -58,3 +58,53 @@ func (t *areasTx) Set(a stored.Area) error {
 	_, _, err = t.tx.Set(t.Key(a.ID), val, nil)
 	return err
 }
+
+func (t *areasTx) UserThings(user, area int) ([]stored.Thing, error) {
+	_, err := t.parent.users.Get(user)
+	if err != nil {
+		return nil, err
+	}
+	a, err := t.Get(area)
+	if err != nil {
+		return nil, err
+	}
+	var out []stored.Thing
+	for _, id := range a.Things {
+		switch id.Type {
+		case stored.TypeList:
+			list, err := t.parent.lists.Get(id.ID)
+			if err != nil {
+				log.Println("oh no, error in a loop :(", user, id, err)
+			}
+			out = append(out, list)
+		case stored.TypeItem:
+			item, err := t.parent.items.UserItem(user, id.ID)
+			if err != nil {
+				log.Println("oh no, error in a loop :(", user, id, err)
+			}
+			out = append(out, item)
+		default:
+			log.Println("wtf, unknown type :O")
+		}
+
+	}
+	return out, err
+}
+
+func (t *areasTx) SetThingPos(area int, typ stored.ThingType, id, pos int) error {
+	a, err := t.Get(area)
+	if err != nil {
+		return err
+	}
+	thing := stored.ThingID{Type: typ, ID: id}
+	i, ok := findInThingArray(a.Things, thing)
+	if !ok {
+		i = len(a.Things)
+		a.Things = append(a.Things, thing)
+	}
+	a.Things, err = sortThingArray(a.Things, i, pos-1) // 0 indexed not 1
+	if err != nil {
+		return err
+	}
+	return t.Set(a)
+}
