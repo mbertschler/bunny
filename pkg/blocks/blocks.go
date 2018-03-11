@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package blocks
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ var (
 	focusWatchIcon = "blue unhide"
 )
 
-func layoutBlock(content html.Block) html.Block {
+func LayoutBlock(content html.Block) html.Block {
 	return html.Blocks{
 		html.Doctype("html"),
 		html.Head(nil,
@@ -54,7 +54,7 @@ func layoutBlock(content html.Block) html.Block {
 	}
 }
 
-func editItemBlock(data data.Item, new bool) html.Block {
+func EditItemBlock(data data.Item, new bool) html.Block {
 	var cancelFunc string
 	if new {
 		cancelFunc = "listView()"
@@ -108,7 +108,7 @@ func menuBlock() html.Block {
 	)
 }
 
-func viewItemBlock(d data.Item) html.Block {
+func ViewItemBlock(d data.Item) html.Block {
 	var status, statusButton html.Block
 	var archiveButton, archiveLabel html.Block
 
@@ -211,7 +211,7 @@ func viewItemBlock(d data.Item) html.Block {
 	)
 }
 
-func viewThingsBlock(d []data.Thing) html.Block {
+func ViewThingsBlock(d []data.Thing) html.Block {
 	var list, archived html.Blocks
 	for _, t := range d {
 		block := listItemBlock(t)
@@ -249,7 +249,7 @@ func viewThingsBlock(d []data.Thing) html.Block {
 	)
 }
 
-func viewListBlock(d []data.Item) html.Block {
+func ViewListBlock(d []data.Item) html.Block {
 	var list, archived html.Blocks
 	for _, t := range d {
 		block := listItemBlock(t)
@@ -345,7 +345,7 @@ func listBlock(list data.List) html.Block {
 	)
 }
 
-func displayFocusBlock(focus data.FocusData) html.Block {
+func ViewFocusBlock(focus data.FocusData) html.Block {
 	var list html.Blocks
 	if len(focus.Later) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),

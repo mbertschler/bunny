@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package guiapi
 
 import (
 	"encoding/json"
@@ -20,10 +20,11 @@ import (
 
 	"github.com/mbertschler/blocks/html"
 
+	"github.com/mbertschler/bunny/pkg/blocks"
 	"github.com/mbertschler/bunny/pkg/data"
 )
 
-func guiAPI() Handler {
+func Handlers() Handler {
 	handler := Handler{
 		Functions: map[string]Callable{
 			"areaView":   areaViewHandler,
@@ -48,7 +49,7 @@ func areaViewHandler(_ json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := replaceContainer(viewThingsBlock(things))
+	res, err := replaceContainer(blocks.ViewThingsBlock(things))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
 		if err != nil {
@@ -71,7 +72,7 @@ func listViewHandler(_ json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := replaceContainer(viewListBlock(list))
+	res, err := replaceContainer(blocks.ViewListBlock(list))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
 		if err != nil {
@@ -94,7 +95,7 @@ func focusViewHandler(_ json.RawMessage) (*Result, error) {
 	if err != nil {
 		log.Println(err)
 	}
-	res, err := replaceContainer(displayFocusBlock(focus))
+	res, err := replaceContainer(blocks.ViewFocusBlock(focus))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny Focus", "/focus/"})
 		if err != nil {
@@ -151,7 +152,7 @@ func focusSortHandler(in json.RawMessage) (*Result, error) {
 }
 
 func itemNewHandler(in json.RawMessage) (*Result, error) {
-	return replaceContainer(editItemBlock(data.Item{}, true))
+	return replaceContainer(blocks.EditItemBlock(data.Item{}, true))
 }
 
 func itemViewHandler(in json.RawMessage) (*Result, error) {
@@ -161,7 +162,7 @@ func itemViewHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	ui, _ := data.UserItemByID(1, id)
-	res, err := replaceContainer(viewItemBlock(ui))
+	res, err := replaceContainer(blocks.ViewItemBlock(ui))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny Item", fmt.Sprint("/item/", id)})
 		if err != nil {
@@ -182,7 +183,7 @@ func itemEditHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	ui, _ := data.UserItemByID(1, id)
-	return replaceContainer(editItemBlock(ui, false))
+	return replaceContainer(blocks.EditItemBlock(ui, false))
 }
 
 func itemSaveHandler(in json.RawMessage) (*Result, error) {
@@ -203,7 +204,7 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 			if err != nil {
 				return nil, err
 			}
-			return replaceContainer(viewListBlock(list))
+			return replaceContainer(blocks.ViewListBlock(list))
 		}
 		newItem, err := data.NewItem()
 		if err != nil {
@@ -219,7 +220,7 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 		d.Body = arg.Body
 	}
 	data.SetItem(d)
-	return replaceContainer(viewItemBlock(d))
+	return replaceContainer(blocks.ViewItemBlock(d))
 }
 
 func itemStateHandler(in json.RawMessage) (*Result, error) {
@@ -241,7 +242,7 @@ func itemStateHandler(in json.RawMessage) (*Result, error) {
 		d.State = data.ItemArchived
 	}
 	data.SetItem(d)
-	return replaceContainer(viewItemBlock(d))
+	return replaceContainer(blocks.ViewItemBlock(d))
 }
 
 func itemFocusHandler(in json.RawMessage) (*Result, error) {
@@ -276,7 +277,7 @@ func itemFocusHandler(in json.RawMessage) (*Result, error) {
 		}
 	}
 	d, _ = data.UserItemByID(1, args.ID)
-	return replaceContainer(viewItemBlock(d))
+	return replaceContainer(blocks.ViewItemBlock(d))
 }
 
 func itemDeleteHandler(in json.RawMessage) (*Result, error) {
@@ -290,7 +291,7 @@ func itemDeleteHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(viewListBlock(list))
+	return replaceContainer(blocks.ViewListBlock(list))
 }
 
 func replaceContainer(block html.Block) (*Result, error) {

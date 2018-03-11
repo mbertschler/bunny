@@ -16,86 +16,13 @@ package main
 import (
 	"log"
 	"net/http"
-	"path/filepath"
-	"strconv"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/mbertschler/blocks/html"
-	"github.com/mbertschler/bunny/pkg/data"
+	"github.com/mbertschler/bunny/pkg/config"
+	"github.com/mbertschler/bunny/pkg/router"
 )
 
 func main() {
-	setupConfig()
-	log.Println("Bunny :) running at port", config.port)
-	log.Println(http.ListenAndServe(":"+config.port, router()))
-}
-
-func router() *chi.Mux {
-	r := chi.NewRouter()
-	r.Use(middleware.Recoverer)
-	r.Mount("/static/",
-		http.StripPrefix("/static/",
-			http.FileServer(http.Dir(
-				filepath.Join(config.root, "js", "node_modules")))))
-	r.Mount("/js/",
-		http.StripPrefix("/js/",
-			http.FileServer(http.Dir(
-				filepath.Join(config.root, "js", "src")))))
-	r.Post("/gui/", guiAPI().ServeHTTP)
-	r.Get("/item/{id}", renderItemPage)
-	r.Get("/list/{id}", renderListPage)
-	r.Get("/focus/", renderFocusPage)
-	r.Get("/", renderAreaPage)
-	return r
-}
-
-func renderItemPage(w http.ResponseWriter, r *http.Request) {
-	ctx := chi.RouteContext(r.Context())
-	idStr := ctx.URLParam("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		log.Println(err)
-	}
-	item, err := data.UserItemByID(1, id)
-	if err != nil {
-		log.Println(err)
-	}
-	err = html.Render(layoutBlock(viewItemBlock(item)), w)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func renderAreaPage(w http.ResponseWriter, r *http.Request) {
-	_, things, err := data.UserArea(1, 1)
-	if err != nil {
-		log.Println(err)
-	}
-	err = html.Render(layoutBlock(viewThingsBlock(things)), w)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func renderListPage(w http.ResponseWriter, r *http.Request) {
-	list, err := data.UserItemList(1, 1)
-	if err != nil {
-		log.Println(err)
-	}
-	err = html.Render(layoutBlock(viewListBlock(list)), w)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func renderFocusPage(w http.ResponseWriter, r *http.Request) {
-	focus, err := data.FocusList(1)
-	if err != nil {
-		log.Println(err)
-	}
-	err = html.Render(layoutBlock(displayFocusBlock(focus)), w)
-	if err != nil {
-		log.Println(err)
-	}
+	config.Setup()
+	log.Println("Bunny :) running at port", config.Port)
+	log.Println(http.ListenAndServe(":"+config.Port, router.Router()))
 }
