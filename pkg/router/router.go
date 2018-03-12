@@ -40,17 +40,15 @@ func Router() *chi.Mux {
 			http.FileServer(http.Dir(
 				filepath.Join(config.Root, "js", "src")))))
 	r.Post("/gui/", guiapi.Handlers().ServeHTTP)
-	r.Get("/item/{id}", renderItemPage)
-	r.Get("/list/{id}", renderListPage)
-	r.Get("/focus/", renderFocusPage)
-	r.Get("/", renderAreaPage)
+	r.Get("/item/{id}", viewItemPage)
+	r.Get("/list/{id}", viewListPage)
+	r.Get("/focus/", viewFocusPage)
+	r.Get("/", viewAreaPage)
 	return r
 }
 
-func renderItemPage(w http.ResponseWriter, r *http.Request) {
-	ctx := chi.RouteContext(r.Context())
-	idStr := ctx.URLParam("id")
-	id, err := strconv.Atoi(idStr)
+func viewItemPage(w http.ResponseWriter, r *http.Request) {
+	id, err := intFromUrl(r, "id")
 	if err != nil {
 		log.Println(err)
 	}
@@ -64,7 +62,7 @@ func renderItemPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func renderAreaPage(w http.ResponseWriter, r *http.Request) {
+func viewAreaPage(w http.ResponseWriter, r *http.Request) {
 	_, things, err := data.UserArea(1, 1)
 	if err != nil {
 		log.Println(err)
@@ -75,8 +73,12 @@ func renderAreaPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func renderListPage(w http.ResponseWriter, r *http.Request) {
-	list, err := data.UserItemList(1, 1)
+func viewListPage(w http.ResponseWriter, r *http.Request) {
+	id, err := intFromUrl(r, "id")
+	if err != nil {
+		log.Println(err)
+	}
+	list, err := data.UserItemList(1, id)
 	if err != nil {
 		log.Println(err)
 	}
@@ -86,7 +88,7 @@ func renderListPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func renderFocusPage(w http.ResponseWriter, r *http.Request) {
+func viewFocusPage(w http.ResponseWriter, r *http.Request) {
 	focus, err := data.FocusList(1)
 	if err != nil {
 		log.Println(err)
@@ -95,4 +97,10 @@ func renderFocusPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func intFromUrl(r *http.Request, name string) (int, error) {
+	ctx := chi.RouteContext(r.Context())
+	str := ctx.URLParam(name)
+	return strconv.Atoi(str)
 }

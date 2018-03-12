@@ -5,7 +5,6 @@ COPY . /go/src/github.com/mbertschler/bunny
 RUN go install github.com/mbertschler/bunny
 
 # ----------------------------------------
-
 FROM alpine:3.7  
 
 RUN apk --no-cache add ca-certificates
@@ -17,4 +16,4 @@ ENV BUNNY_ROOT=/
 
 EXPOSE 3080
 
-CMD ["/bunny"]  
+CMD ["/bunny"]
