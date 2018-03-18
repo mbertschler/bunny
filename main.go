@@ -24,5 +24,6 @@ import (
 func main() {
 	config.Setup()
 	log.Println("Bunny :) running at port", config.Port)
-	log.Println(http.ListenAndServe(":"+config.Port, router.Router()))
+	log.Println(http.ListenAndServe(":"+config.Port,
+		router.Router(config.Root)))
 }

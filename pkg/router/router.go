@@ -23,28 +23,34 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/mbertschler/blocks/html"
 	"github.com/mbertschler/bunny/pkg/blocks"
-	"github.com/mbertschler/bunny/pkg/config"
 	"github.com/mbertschler/bunny/pkg/data"
 	"github.com/mbertschler/bunny/pkg/guiapi"
 )
 
-func Router() *chi.Mux {
+func Router(root string) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
-	r.Mount("/static/",
-		http.StripPrefix("/static/",
-			http.FileServer(http.Dir(
-				filepath.Join(config.Root, "js", "node_modules")))))
-	r.Mount("/js/",
-		http.StripPrefix("/js/",
-			http.FileServer(http.Dir(
-				filepath.Join(config.Root, "js", "src")))))
-	r.Post("/gui/", guiapi.Handlers().ServeHTTP)
+	mountFileServer(r, "/static/", root, "js", "node_modules")
+	mountFileServer(r, "/js/", root, "js", "src")
+	r.Method("POST", "/gui/", guiapi.Handlers())
+	r.Mount("/", pages())
+	return r
+}
+
+func pages() *chi.Mux {
+	r := chi.NewRouter()
 	r.Get("/item/{id}", viewItemPage)
 	r.Get("/list/{id}", viewListPage)
 	r.Get("/focus/", viewFocusPage)
 	r.Get("/", viewAreaPage)
 	return r
+}
+
+func mountFileServer(router *chi.Mux, url string, path ...string) {
+	dir := http.Dir(filepath.Join(path...))
+	fs := http.StripPrefix(url,
+		http.FileServer(dir))
+	router.Mount(url, fs)
 }
 
 func viewItemPage(w http.ResponseWriter, r *http.Request) {

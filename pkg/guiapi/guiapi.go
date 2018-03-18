@@ -25,6 +25,11 @@ import (
 // ============================================
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintln(w, "guiapi request needs to use the POST method")
+		return
+	}
 	var req Request
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&req)
