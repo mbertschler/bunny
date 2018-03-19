@@ -22,7 +22,10 @@ import (
 )
 
 func main() {
-	config.Setup()
+	err := config.Setup()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Println("Bunny :) running at port", config.Port)
 	log.Println(http.ListenAndServe(":"+config.Port,
 		router.Router(config.Root)))

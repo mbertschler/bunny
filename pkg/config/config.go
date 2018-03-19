@@ -25,26 +25,24 @@ var (
 	Root string // $BUNNY_ROOT
 )
 
-func Setup() {
+func Setup() error {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	setFromEnvironment(&Port, "BUNNY_PORT", "3080")
-	setFromEnvironment(&Root, "BUNNY_ROOT", "")
+	Port = envOrFallback("BUNNY_PORT", "3080")
+	Root = envOrFallback("BUNNY_ROOT", "")
 	if Root == "" {
 		var err error
 		Root, err = findProjectFolder()
-		if err != nil {
-			log.Fatal(err)
-		}
+		return err
 	}
+	return nil
 }
 
-func setFromEnvironment(target *string, name, fallback string) {
+func envOrFallback(name, fallback string) string {
 	val, ok := os.LookupEnv(name)
 	if ok {
-		*target = val
-	} else {
-		*target = fallback
+		return val
 	}
+	return fallback
 }
 
 func findProjectFolder() (string, error) {
