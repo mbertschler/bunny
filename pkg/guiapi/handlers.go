@@ -152,7 +152,7 @@ func focusSortHandler(in json.RawMessage) (*Result, error) {
 }
 
 func itemNewHandler(in json.RawMessage) (*Result, error) {
-	return replaceContainer(blocks.EditItemBlock(data.Item{}, true))
+	return replaceContainer(blocks.EditItemPage(data.Item{}, true))
 }
 
 func itemViewHandler(in json.RawMessage) (*Result, error) {
@@ -183,7 +183,7 @@ func itemEditHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	ui, _ := data.UserItemByID(1, id)
-	return replaceContainer(blocks.EditItemBlock(ui, false))
+	return replaceContainer(blocks.EditItemPage(ui, false))
 }
 
 func itemSaveHandler(in json.RawMessage) (*Result, error) {

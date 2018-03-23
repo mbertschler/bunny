@@ -21,76 +21,6 @@ import (
 	"github.com/mbertschler/bunny/pkg/data"
 )
 
-var (
-	focusNowIcon   = "yellow star"
-	focusLaterIcon = "red wait"
-	focusWatchIcon = "blue unhide"
-)
-
-func LayoutBlock(content html.Block) html.Block {
-	return html.Blocks{
-		html.Doctype("html"),
-		html.Head(nil,
-			html.Meta(html.Charset("utf-8")),
-			html.Meta(html.Attr{{Key: "http-equiv", Value: "X-UA-Compatible"}}.Content("IE=edge,chome=1")),
-			html.Meta(html.Name("viewport").Content("width=device-width, initial-scale=1.0, maximum-scale=1.0")),
-			html.Meta(html.Name("apple-mobile-web-app-capable").Content("yes")),
-			html.Title(nil,
-				html.Text("Bunny"),
-			),
-			html.Link(html.Rel("stylesheet").Href("/static/semantic-ui-css/semantic.min.css")),
-		),
-		html.Body(nil,
-			html.H1(html.Class("ui center aligned header").Styles("padding:32px 0 16px"),
-				html.Text("Bunny Work Management Tool")),
-			html.Div(html.Id("container"),
-				content,
-			),
-			html.Script(html.Src("/static/jquery/dist/jquery.min.js")),
-			html.Script(html.Src("/static/semantic-ui-css/semantic.min.js")),
-			html.Script(html.Src("/static/sortablejs/Sortable.min.js")),
-			html.Script(html.Src("/js/app.js")),
-		),
-	}
-}
-
-func EditItemBlock(data data.Item, new bool) html.Block {
-	var cancelFunc string
-	if new {
-		cancelFunc = "listView()"
-	} else {
-		cancelFunc = fmt.Sprintf("itemView(%d)", data.ID)
-	}
-	return html.Div(html.Class("ui text container"),
-		html.Div(html.Class("ui grid"),
-			html.Div(html.Class("column"),
-				html.Button(append(html.Class("ui right floated positive button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemSave(%d, %t)", data.ID, new)}),
-					html.Text("Save"),
-				),
-				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: cancelFunc}),
-					html.Text("Cancel"),
-				),
-			),
-		),
-		html.Div(html.Class("ui form"),
-			html.Div(html.Class("ui big input fluid").Styles("padding-top:15px"),
-				html.Input(append(html.Class("itemForm").Name("Title").Type("text").Value(data.Title),
-					html.AttrPair{Key: "placeholder", Value: "Item title"})),
-			),
-			html.Div(html.Class("ui divider")),
-			html.Div(html.Class("field"),
-				html.Textarea(append(html.Class("itemForm").Name("Body").Styles("font:inherit;"),
-					html.AttrPair{Key: "placeholder", Value: "Item description"},
-					html.AttrPair{Key: "rows", Value: "8"}),
-					html.Text(data.Body),
-				),
-			),
-		),
-	)
-}
-
 func menuBlock() html.Block {
 	return html.Div(html.Class("ui two item menu"),
 		// html.A(append(html.Class("item"),
@@ -114,7 +44,7 @@ func ViewItemBlock(d data.Item) html.Block {
 
 	switch d.State {
 	case data.ItemComplete:
-		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
+		status = completeItemElement
 		archiveButton = html.Button(append(html.Class("ui right floated button"),
 			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'archived')", d.ID)}),
 			html.Text("Archive item"),
@@ -124,7 +54,7 @@ func ViewItemBlock(d data.Item) html.Block {
 			html.Text("Reopen item"),
 		)
 	case data.ItemArchived:
-		status = html.I(html.Class("checkmark icon green").Styles("display:inline-block"))
+		status = completeItemElement
 		archiveButton = html.Button(append(html.Class("ui right floated button"),
 			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", d.ID)}),
 			html.Text("Unarchive item"),
@@ -136,7 +66,7 @@ func ViewItemBlock(d data.Item) html.Block {
 			html.Text("Delete item"),
 		)
 	case data.ItemOpen:
-		status = html.I(html.Class("radio icon grey").Styles("display:inline-block"))
+		status = openItemElement
 		statusButton = html.Button(append(html.Class("ui right floated positive button"),
 			html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemState(%d, 'complete')", d.ID)}),
 			html.Text("Complete item"),
@@ -347,7 +277,7 @@ func listBlock(list data.List) html.Block {
 
 func ViewFocusBlock(focus data.FocusData) html.Block {
 	var list html.Blocks
-	if len(focus.Later) > 0 {
+	if len(focus.Focus) > 0 {
 		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
 			html.I(html.Class("large middle aligned icon "+focusNowIcon).Styles("padding-right:12px")),
 			html.Text("Focus"),
