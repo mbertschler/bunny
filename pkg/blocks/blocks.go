@@ -97,16 +97,42 @@ func listBlock(list data.List) html.Block {
 
 func gridColumnBlock(children ...html.Block) html.Block {
 	return html.Div(html.Class("ui grid"),
-		html.Div(html.Class("column"),
+		html.Div(html.Class("column").Styles("text-align:center"),
 			children...,
 		),
 	)
 }
 
+func buttonGroupBlock(buttons ...html.Block) html.Block {
+	return gridColumnBlock(
+		html.Div(html.Class("ui buttons"),
+			buttons...,
+		),
+	)
+}
+
 func floatedButton(class, action, text string) html.Block {
+	return floatedIconButton(class, action, "", text)
+}
+
+func floatedIconButton(class, action, icon, text string) html.Block {
+	var iconBlock html.Block
+	if icon != "" {
+		iconBlock = html.I(html.Class("icon " + icon))
+	}
 	return html.Button(append(
-		html.Class("ui floated button "+class),
+		html.Class("ui "+class+" floated button"),
 		html.AttrPair{Key: "onclick", Value: action}),
+		iconBlock,
+		html.Text(text),
+	)
+}
+
+func compactIconButton(class, action, icon, text string) html.Block {
+	return html.Button(append(
+		html.Class("ui "+class+" compact button "),
+		html.AttrPair{Key: "onclick", Value: action}),
+		html.I(html.Class("icon "+icon)),
 		html.Text(text),
 	)
 }
