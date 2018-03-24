@@ -49,7 +49,7 @@ func areaViewHandler(_ json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := replaceContainer(blocks.ViewThingsBlock(things))
+	res, err := replaceContainer(blocks.ViewAreaPage(things))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
 		if err != nil {
@@ -72,7 +72,7 @@ func listViewHandler(_ json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := replaceContainer(blocks.ViewListBlock(list))
+	res, err := replaceContainer(blocks.ViewListPage(list))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny List", "/"})
 		if err != nil {
@@ -95,7 +95,7 @@ func focusViewHandler(_ json.RawMessage) (*Result, error) {
 	if err != nil {
 		log.Println(err)
 	}
-	res, err := replaceContainer(blocks.ViewFocusBlock(focus))
+	res, err := replaceContainer(blocks.ViewFocusPage(focus))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny Focus", "/focus/"})
 		if err != nil {
@@ -162,7 +162,7 @@ func itemViewHandler(in json.RawMessage) (*Result, error) {
 		return nil, err
 	}
 	ui, _ := data.UserItemByID(1, id)
-	res, err := replaceContainer(blocks.ViewItemBlock(ui))
+	res, err := replaceContainer(blocks.ViewItemPage(ui))
 	if res != nil {
 		args, err := json.Marshal([]interface{}{nil, "Bunny Item", fmt.Sprint("/item/", id)})
 		if err != nil {
@@ -204,7 +204,7 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 			if err != nil {
 				return nil, err
 			}
-			return replaceContainer(blocks.ViewListBlock(list))
+			return replaceContainer(blocks.ViewListPage(list))
 		}
 		newItem, err := data.NewItem()
 		if err != nil {
@@ -220,7 +220,7 @@ func itemSaveHandler(in json.RawMessage) (*Result, error) {
 		d.Body = arg.Body
 	}
 	data.SetItem(d)
-	return replaceContainer(blocks.ViewItemBlock(d))
+	return replaceContainer(blocks.ViewItemPage(d))
 }
 
 func itemStateHandler(in json.RawMessage) (*Result, error) {
@@ -242,7 +242,7 @@ func itemStateHandler(in json.RawMessage) (*Result, error) {
 		d.State = data.ItemArchived
 	}
 	data.SetItem(d)
-	return replaceContainer(blocks.ViewItemBlock(d))
+	return replaceContainer(blocks.ViewItemPage(d))
 }
 
 func itemFocusHandler(in json.RawMessage) (*Result, error) {
@@ -277,7 +277,7 @@ func itemFocusHandler(in json.RawMessage) (*Result, error) {
 		}
 	}
 	d, _ = data.UserItemByID(1, args.ID)
-	return replaceContainer(blocks.ViewItemBlock(d))
+	return replaceContainer(blocks.ViewItemPage(d))
 }
 
 func itemDeleteHandler(in json.RawMessage) (*Result, error) {
@@ -291,7 +291,7 @@ func itemDeleteHandler(in json.RawMessage) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return replaceContainer(blocks.ViewListBlock(list))
+	return replaceContainer(blocks.ViewListPage(list))
 }
 
 func replaceContainer(block html.Block) (*Result, error) {

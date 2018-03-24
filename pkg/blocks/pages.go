@@ -21,24 +21,15 @@ import (
 )
 
 func EditItemPage(data data.Item, new bool) html.Block {
-	var cancelFunc string
+	cancelFunc := fmt.Sprintf("itemView(%d)", data.ID)
 	if new {
 		cancelFunc = "listView()"
-	} else {
-		cancelFunc = fmt.Sprintf("itemView(%d)", data.ID)
 	}
+	saveFunc := fmt.Sprintf("itemSave(%d, %t)", data.ID, new)
 	return html.Div(html.Class("ui text container"),
-		html.Div(html.Class("ui grid"),
-			html.Div(html.Class("column"),
-				html.Button(append(html.Class("ui right floated positive button"),
-					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemSave(%d, %t)", data.ID, new)}),
-					html.Text("Save"),
-				),
-				html.Button(append(html.Class("ui right floated button"),
-					html.AttrPair{Key: "onclick", Value: cancelFunc}),
-					html.Text("Cancel"),
-				),
-			),
+		gridColumnBlock(
+			floatedButton("right positive", saveFunc, "Save"),
+			floatedButton("right", cancelFunc, "Cancel"),
 		),
 		html.Div(html.Class("ui form"),
 			html.Div(html.Class("ui big input fluid").Styles("padding-top:15px"),
@@ -53,6 +44,215 @@ func EditItemPage(data data.Item, new bool) html.Block {
 					html.Text(data.Body),
 				),
 			),
+		),
+	)
+}
+
+func ViewItemPage(d data.Item) html.Block {
+	var status, statusButton html.Block
+	var archiveButton, archiveLabel html.Block
+	switch d.State {
+	case data.ItemComplete:
+		status = completeItemElement
+		archiveButton = floatedButton("right",
+			fmt.Sprintf("itemState(%d, 'archived')", d.ID), "Archive item")
+		statusButton = floatedButton("right yellow",
+			fmt.Sprintf("itemState(%d, 'open')", d.ID), "Reopen item")
+	case data.ItemArchived:
+		status = completeItemElement
+		archiveButton = floatedButton("right",
+			fmt.Sprintf("itemState(%d, 'complete')", d.ID), "Unarchive item")
+		statusButton = floatedButton("right red",
+			fmt.Sprintf("itemDelete(%d)", d.ID), "Delete item")
+		archiveLabel = html.Div(html.Class("ui horizontal label").
+			Styles("top: -4px; position: relative; margin-right: 8px;"), html.Text("archived"))
+	case data.ItemOpen:
+		status = openItemElement
+		statusButton = floatedButton("right positive",
+			fmt.Sprintf("itemState(%d, 'complete')", d.ID), "Complete item")
+	}
+
+	var laterClass, focusClass, watchClass string
+	var focusIcon = "star"
+	switch d.Focus {
+	case data.FocusLater:
+		laterClass = " red"
+	case data.FocusNow:
+		focusClass = " yellow"
+	case data.FocusWatch:
+		watchClass = " blue"
+	case data.FocusNone:
+		laterClass = " red"
+		focusClass = " yellow"
+		watchClass = " blue"
+	}
+
+	return html.Div(html.Class("ui text container"),
+		menuBlock(),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column").Styles("text-align:center"),
+				html.Button(append(html.Class("ui left floated button"),
+					html.AttrPair{Key: "onclick", Value: "listView()"}),
+					html.I(html.Class("chevron left icon")),
+					html.Text("List"),
+				),
+				html.Button(append(html.Class("ui right floated button"),
+					html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemEdit(%d)", d.ID)}),
+					html.Text("Edit"),
+				),
+			),
+		),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column").Styles("text-align:center"),
+				html.Div(html.Class("ui buttons"),
+					html.Button(append(html.Class("ui compact button"+laterClass),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'later')", d.ID)}),
+						html.I(html.Class("wait icon")),
+						html.Text("Later"),
+					),
+					html.Button(append(html.Class("ui compact button"+focusClass),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'focus')", d.ID)}),
+						html.I(html.Class(focusIcon+" icon")),
+						html.Text("Focus"),
+					),
+					html.Button(append(html.Class("ui compact button"+watchClass),
+						html.AttrPair{Key: "onclick", Value: fmt.Sprintf("itemFocus(%d, 'watch')", d.ID)}),
+						html.I(html.Class("unhide icon")),
+						html.Text("Watch"),
+					),
+				),
+			),
+		),
+		html.H2(nil,
+			status,
+			archiveLabel,
+			html.Text(d.Title),
+		),
+		html.Div(html.Class("ui divider")),
+		html.P(nil, html.Text(d.Body)),
+		html.Div(html.Class("ui divider")),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column"),
+				archiveButton,
+				statusButton,
+			),
+		),
+	)
+}
+
+func ViewAreaPage(d []data.Thing) html.Block {
+	var list, archived html.Blocks
+	for _, t := range d {
+		block := listItemBlock(t)
+		if t.Archived() {
+			if len(archived) == 0 {
+				archived.Add(html.H4(html.Styles("padding-left:48px"),
+					html.Text("Archived"),
+				))
+			}
+			archived.Add(block)
+		} else {
+			list.Add(block)
+		}
+	}
+	return html.Div(html.Class("ui text container"),
+		menuBlock(),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column"),
+				html.Button(append(html.Class("ui right floated positive button"),
+					html.AttrPair{Key: "onclick", Value: "itemNew()"}),
+					html.Text("New item"),
+				),
+				html.Button(append(html.Class("ui right floated purple button"),
+					html.AttrPair{Key: "onclick", Value: "listNew()"}),
+					html.Text("New list"),
+				),
+			),
+		),
+		html.Div(html.Id("item-list").Class("ui relaxed selection list"),
+			list,
+		),
+		html.Div(html.Id("archive-list").Class("ui relaxed selection list"),
+			archived,
+		),
+	)
+}
+
+func ViewListPage(d []data.Item) html.Block {
+	var list, archived html.Blocks
+	for _, t := range d {
+		block := listItemBlock(t)
+		if t.Archived() {
+			if len(archived) == 0 {
+				archived.Add(html.H4(html.Styles("padding-left:48px"),
+					html.Text("Archived"),
+				))
+			}
+			archived.Add(block)
+		} else {
+			list.Add(block)
+		}
+	}
+	return html.Div(html.Class("ui text container"),
+		menuBlock(),
+		html.Div(html.Class("ui grid"),
+			html.Div(html.Class("column"),
+				html.Button(append(html.Class("ui left floated button"),
+					html.AttrPair{Key: "onclick", Value: "areaView()"}),
+					html.I(html.Class("chevron left icon")),
+					html.Text("Area"),
+				),
+				html.Button(append(html.Class("ui right floated positive button"),
+					html.AttrPair{Key: "onclick", Value: "itemNew()"}),
+					html.Text("New item"),
+				),
+			),
+		),
+		html.Div(html.Id("item-list").Class("ui relaxed selection list"),
+			list,
+		),
+		html.Div(html.Id("archive-list").Class("ui relaxed selection list"),
+			archived,
+		),
+	)
+}
+
+func ViewFocusPage(focus data.FocusData) html.Block {
+	var list html.Blocks
+	if len(focus.Focus) > 0 {
+		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
+			html.I(html.Class("large middle aligned icon "+focusNowIcon).Styles("padding-right:12px")),
+			html.Text("Focus"),
+		))
+	}
+	for _, item := range focus.Focus {
+		item.Focus = data.FocusNone
+		list.Add(listItemBlock(item))
+	}
+	if len(focus.Later) > 0 {
+		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
+			html.I(html.Class("large middle aligned icon "+focusLaterIcon).Styles("padding-right:12px")),
+			html.Text("Later"),
+		))
+	}
+	for _, item := range focus.Later {
+		item.Focus = data.FocusNone
+		list.Add(listItemBlock(item))
+	}
+	if len(focus.Watch) > 0 {
+		list.Add(html.H4(html.Styles("padding-left:10px; margin: 32px 0 0;"),
+			html.I(html.Class("large middle aligned icon "+focusWatchIcon).Styles("padding-right:12px")),
+			html.Text("Watched"),
+		))
+	}
+	for _, item := range focus.Watch {
+		item.Focus = data.FocusNone
+		list.Add(listItemBlock(item))
+	}
+	return html.Div(html.Class("ui text container"),
+		menuBlock(),
+		html.Div(html.Id("focus-list").Class("ui relaxed selection list"),
+			list,
 		),
 	)
 }

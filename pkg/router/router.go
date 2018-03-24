@@ -62,7 +62,7 @@ func viewItemPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(blocks.LayoutBlock(blocks.ViewItemBlock(item)), w)
+	err = html.Render(blocks.LayoutBlock(blocks.ViewItemPage(item)), w)
 	if err != nil {
 		log.Println(err)
 	}
@@ -73,7 +73,7 @@ func viewAreaPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(blocks.LayoutBlock(blocks.ViewThingsBlock(things)), w)
+	err = html.Render(blocks.LayoutBlock(blocks.ViewAreaPage(things)), w)
 	if err != nil {
 		log.Println(err)
 	}
@@ -88,7 +88,7 @@ func viewListPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(blocks.LayoutBlock(blocks.ViewListBlock(list)), w)
+	err = html.Render(blocks.LayoutBlock(blocks.ViewListPage(list)), w)
 	if err != nil {
 		log.Println(err)
 	}
@@ -99,7 +99,7 @@ func viewFocusPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	err = html.Render(blocks.LayoutBlock(blocks.ViewFocusBlock(focus)), w)
+	err = html.Render(blocks.LayoutBlock(blocks.ViewFocusPage(focus)), w)
 	if err != nil {
 		log.Println(err)
 	}
